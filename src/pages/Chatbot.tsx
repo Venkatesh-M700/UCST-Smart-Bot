@@ -8,12 +8,12 @@ import {
   BookOpen, 
   School, 
   FileText, 
-  PhoneCall,
-  Plus,
-  Edit2,
-  Trash2,
-  X,
-  ShieldCheck
+  PhoneCall, 
+  Plus, 
+  Edit2, 
+  Trash2, 
+  X, 
+  ShieldCheck 
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
@@ -268,27 +268,33 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     } catch {}
   };
 
-  // 🌟 Priority-Ranked Multi-Domain Intelligent Matching 🌟
+  // 🌟 Strict Priority Search Engine 🌟
   const analyzeAndReply = (query: string): string => {
     const q = query.toLowerCase().trim();
 
-    // Load dynamic knowledge from LocalStorage if fresh
     let knowledgeBase = dynamicKnowledge;
     try {
       const local = localStorage.getItem(KNOWLEDGE_KEY);
       if (local) knowledgeBase = JSON.parse(local);
     } catch {}
 
-    // Load Department Data
     let allDepts = departments && departments.length > 0 ? departments : DEFAULT_DEPTS;
     try {
       const localDepts = localStorage.getItem(DEPT_STORAGE_KEY);
       if (localDepts) allDepts = JSON.parse(localDepts);
     } catch {}
 
-    // 🎯 PRIORITY 1: DEPARTMENT HEAD / HOD QUERIES
-    const isHeadQuery = q.includes('head') || q.includes('hod') || q.includes('ramani') || q.includes('shwetha') || q.includes('manjunath') || q.includes('geetha');
-    if (isHeadQuery) {
+    // 1️⃣ Priority: Department Head / HOD
+    if (
+      q.includes('head') || 
+      q.includes('hod') || 
+      q.includes('ramani') || 
+      q.includes('shwetha') || 
+      q.includes('manjunath') || 
+      q.includes('geetha') ||
+      (q.includes('bca') && q.includes('head')) ||
+      (q.includes('computer') && q.includes('head'))
+    ) {
       for (const d of allDepts) {
         const dName = (d.name || '').toLowerCase();
         const dHead = (d.head || '').toLowerCase();
@@ -301,15 +307,22 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
           (q.includes('math') && dName.includes('math')) ||
           (q.includes('chem') && dName.includes('chem'))
         ) {
-          return `🏛️ **${d.name}:**\n• **Head of Department (HOD):** ${d.head}\n• **Overview:** ${d.description || 'Dedicated department with modern lab facilities and experienced faculty.'}`;
+          return `🏛️ **${d.name}:**\n• **Head of Department (HOD):** ${d.head}\n• **Overview:** ${d.description || 'Equipped with modern lab facilities and top faculty.'}`;
         }
       }
       return `🏛️ **Department Heads at UCS Tumkur:**\n\n${allDepts.map((d: any) => `• **${d.name}**\n  👤 Head: **${d.head}**\n  ${d.description || ''}`).join('\n\n')}`;
     }
 
-    // 🎯 PRIORITY 2: ADMISSION QUERIES (admission, bca admission, how to join, apply, eligibility)
-    const isAdmissionQuery = q.includes('admi') || q.includes('apply') || q.includes('seat') || q.includes('eligib') || q.includes('join') || q.includes('form') || q.includes('how to apply');
-    if (isAdmissionQuery) {
+    // 2️⃣ Priority: Admission
+    if (
+      q.includes('admi') || 
+      q.includes('apply') || 
+      q.includes('seat') || 
+      q.includes('eligib') || 
+      q.includes('join') || 
+      q.includes('form') ||
+      q.includes('how to apply')
+    ) {
       const adm = knowledgeBase.find(k => 
         (k.topic && k.topic.toLowerCase().includes('admi')) || 
         (k.content && k.content.toLowerCase().includes('admission'))
@@ -318,9 +331,8 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       return DEFAULT_AI_KNOWLEDGE[0].content;
     }
 
-    // 🎯 PRIORITY 3: FEES & SCHOLARSHIP QUERIES
-    const isFeeQuery = q.includes('fee') || q.includes('cost') || q.includes('scholar') || q.includes('ssp') || q.includes('nsp') || q.includes('amount') || q.includes('pay');
-    if (isFeeQuery) {
+    // 3️⃣ Priority: Fees & Scholarships
+    if (q.includes('fee') || q.includes('cost') || q.includes('scholar') || q.includes('ssp') || q.includes('nsp') || q.includes('amount') || q.includes('pay')) {
       const fee = knowledgeBase.find(k => 
         (k.topic && (k.topic.toLowerCase().includes('fee') || k.topic.toLowerCase().includes('scholar'))) ||
         (k.content && k.content.toLowerCase().includes('fee'))
@@ -329,37 +341,36 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       return DEFAULT_AI_KNOWLEDGE[2].content;
     }
 
-    // 🎯 PRIORITY 4: COURSES QUERIES
-    const isCourseQuery = q.includes('cours') || q.includes('branch') || q.includes('program') || q.includes('bca') || q.includes('bsc') || q.includes('msc') || q.includes('degre');
-    if (isCourseQuery) {
+    // 4️⃣ Priority: Courses
+    if (q.includes('cours') || q.includes('branch') || q.includes('program') || q.includes('bca') || q.includes('bsc') || q.includes('msc') || q.includes('degre')) {
       const crs = knowledgeBase.find(k => k.topic && k.topic.toLowerCase().includes('cours'));
       if (crs) return crs.content;
       if (courses && courses.length > 0) {
-        return `📚 **Academic Programs at UCS Tumkur:**\n\n${courses.map((c: any) => `• **${c.name}** (${c.duration || '3 Years'})\n  Eligibility: ${c.eligibility || 'PUC/10+2 with Science/Maths'}\n  Fees: *${c.fees || 'As per govt norms'}*`).join('\n\n')}`;
+        return `📚 **Programs Offered at UCS Tumkur:**\n\n${courses.map((c: any) => `• **${c.name}** (${c.duration || '3 Years'})\n  Eligibility: ${c.eligibility || 'PUC/10+2 with Science/Maths'}\n  Fees: *${c.fees || 'As per govt norms'}*`).join('\n\n')}`;
       }
       return DEFAULT_AI_KNOWLEDGE[1].content;
     }
 
-    // 🎯 PRIORITY 5: HOSTEL QUERIES
+    // 5️⃣ Priority: Hostel
     if (q.includes('host') || q.includes('room') || q.includes('stay') || q.includes('mess')) {
       const h = knowledgeBase.find(k => k.topic && k.topic.toLowerCase().includes('host'));
       return h ? h.content : DEFAULT_AI_KNOWLEDGE[3].content;
     }
 
-    // 🎯 PRIORITY 6: CONTACT & HELPDESK
+    // 6️⃣ Priority: Contact & Helpdesk
     if (q.includes('contact') || q.includes('phone') || q.includes('call') || q.includes('email') || q.includes('address') || q.includes('locat') || q.includes('help')) {
       const c = knowledgeBase.find(k => k.topic && (k.topic.toLowerCase().includes('contact') || k.topic.toLowerCase().includes('help')));
       if (c) return c.content;
       return `📍 **Campus Contact Details:**\n• **Institution:** ${settings?.college_name || 'University College of Science, Tumkur'}\n• **Address:** ${settings?.address || 'Tumkur University Campus, BH Road, Tumkur - 572103'}\n• **Phone:** 📞 **${settings?.phone || '0816-2203500'}**\n• **Email:** 📧 **${settings?.email || 'ucscience@tumkuruniversity.ac.in'}**\n• **Website:** 🌐 https://tumkuruniversity.ac.in`;
     }
 
-    // 🎯 PRIORITY 7: SPORTS & NSS
+    // 7️⃣ Priority: Sports & NSS
     if (q.includes('sport') || q.includes('gym') || q.includes('nss') || q.includes('activ')) {
       const s = knowledgeBase.find(k => k.topic && (k.topic.toLowerCase().includes('sport') || k.topic.toLowerCase().includes('nss')));
       return s ? s.content : DEFAULT_AI_KNOWLEDGE[5].content;
     }
 
-    // 🎯 PRIORITY 8: ALL OTHER TRAINED KNOWLEDGE
+    // 8️⃣ Match all other Dynamic Knowledge items
     const tokens = q.replace(/[^a-zA-Z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length >= 2);
     for (const item of knowledgeBase) {
       const topic = (item.topic || '').toLowerCase();
@@ -369,7 +380,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       }
     }
 
-    // 🎯 PRIORITY 9: FAQ DATABASE
+    // 9️⃣ Match FAQs
     if (faqs && faqs.length > 0) {
       for (const faq of faqs) {
         if (faq.question && (q.includes(faq.question.toLowerCase()) || tokens.some(t => faq.question.toLowerCase().includes(t)))) {
@@ -378,7 +389,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       }
     }
 
-    // 🎯 PRIORITY 10: GREETINGS
+    // 🔟 Greetings
     if (['hi', 'hello', 'hey', 'namaste', 'start'].some(g => q.startsWith(g))) {
       return `Hello! 👋 How can I assist you with **admissions, courses, department heads, fees, hostels, or campus details** today?`;
     }
