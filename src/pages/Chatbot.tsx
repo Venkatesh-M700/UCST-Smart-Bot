@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { useCollegeSettings, useCourses } from '@/hooks/useCollegeData';
+import { useCollegeSettings, useCourses, useDepartments, useFAQs } from '@/hooks/useCollegeData';
 import { Logo } from '@/components/Logo';
 import { AnnouncementBar } from '@/components/AnnouncementBar';
 import type { Route } from '@/types/route';
@@ -40,12 +40,12 @@ interface ChatbotProps {
 }
 
 const DEFAULT_AI_KNOWLEDGE = [
-  { id: 'kn-1', topic: 'Admission Process', content: '🎓 **Admission Process:**\n1. Applications are open online and at the college admission desk.\n2. Submit 10th & 12th/PUC marks cards along with required category certificates.\n3. Merit list is announced, followed by document verification & fee payment.\nFor admission assistance, call: **0816-2203500**' },
-  { id: 'kn-2', topic: 'Courses Offered', content: 'We offer premier programs:\n• **BCA** (Bachelor of Computer Applications)\n• **B.Sc** (PMCs, CBZ, Electronics, Biotechnology)\n• **M.Sc** programs with state-of-the-art laboratory facilities.' },
-  { id: 'kn-3', topic: 'Fees & Scholarships', content: 'Tuition fees follow **Karnataka government norms** (Approx *Rs. 25,000/year* for BCA). Post-matric SSP, NSP scholarships and category fee concessions are applicable for eligible students.' },
-  { id: 'kn-4', topic: 'Hostel Facilities', content: '**UCS Tumkur** provides secure hostel accommodation with hygienic mess facilities, 24/7 security, and dedicated study halls for both boys and girls.' },
+  { id: 'kn-1', topic: 'Admission Process', content: '🎓 **Admission Process & Eligibility:**\n1. Admissions are open for **BCA**, **B.Sc**, and **M.Sc** programs.\n2. Submit 10th & 12th/PUC marks cards along with category certificate (if applicable).\n3. Merit list is published on campus & online followed by document verification.\n• For application forms and seat enquiry, contact college admission desk: **0816-2203500**.' },
+  { id: 'kn-2', topic: 'Courses Offered', content: 'We offer premier programs:\n• **BCA** (Bachelor of Computer Applications) - 3 Years\n• **B.Sc** (PMCs, CBZ, Electronics, Biotechnology) - 3 Years\n• **M.Sc** programs with advanced laboratories.' },
+  { id: 'kn-3', topic: 'Fees & Scholarships', content: 'Tuition fees follow **Karnataka state government norms** (Approx *Rs. 25,000/year* for BCA). Post-matric SSP, NSP scholarships and category fee concessions are available.' },
+  { id: 'kn-4', topic: 'Hostel Facilities', content: '**UCS Tumkur** provides secure hostel accommodation with hygienic mess facilities, 24/7 security, and study halls for both boys and girls near the campus.' },
   { id: 'kn-5', topic: 'College Helpdesk & Contact', content: '📍 **Address:** BH Road, Tumkur - 572103\n📞 **Phone:** 0816-2203500\n📧 **Email:** ucscience@tumkuruniversity.ac.in\n🌐 **Website:** https://tumkuruniversity.ac.in' },
-  { id: 'kn-6', topic: 'NSS & Sports', content: '**UCS Tumkur** has active **NSS**, **Youth Red Cross**, and sports facilities for cricket, volleyball, badminton, and a modern student gym.' }
+  { id: 'kn-6', topic: 'NSS & Sports', content: '**UCS Tumkur** features active **NSS**, **Youth Red Cross**, cricket ground, volleyball, badminton, and a modern student gym.' }
 ];
 
 const DEFAULT_PROMPTS: QuickPrompt[] = [
@@ -57,7 +57,7 @@ const DEFAULT_PROMPTS: QuickPrompt[] = [
 
 const KNOWLEDGE_KEY = 'ucs_admin_knowledge';
 
-// 🌟 Robust Parser for Bold, Italic & Clickable Hyperlinks 🌟
+// 🌟 Markdown & Link Parser 🌟
 function FormattedText({ text }: { text: string }) {
   const parseContent = (input: string) => {
     let parsed = input.replace(
@@ -87,6 +87,8 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
   const { user, isAdmin: contextIsAdmin } = useAuth();
   const { settings } = useCollegeSettings();
   const { courses } = useCourses();
+  const { departments } = useDepartments();
+  const { faqs } = useFAQs();
 
   const getAdminStatus = () => {
     try {
@@ -235,14 +237,16 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     } catch {}
   };
 
-  // 🌟 Smart Fuzzy Keyword Matcher 🌟
+  // 🌟 Universal Site-Wide Intelligent Response Generator 🌟
   const generateBotReplyAsync = async (query: string): Promise<string> => {
     const rawQ = query.toLowerCase().trim();
+    const normalizedQ = rawQ.replace(/(.)\1+/g, '$1'); // Fix duplicate letters (e.g. "admisssion" -> "admision")
     const cleanTokens = rawQ
       .replace(/[^a-zA-Z0-9\s]/g, ' ')
       .split(/\s+/)
       .filter((w) => w.length >= 2);
 
+    // 1. Fetch AI Knowledge
     let freshKnowledge: any[] = [];
     try {
       const { data: kbData } = await supabase
@@ -265,24 +269,109 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
 
     const knowledgeSource = freshKnowledge.length > 0 ? freshKnowledge : DEFAULT_AI_KNOWLEDGE;
 
-    let bestMatch: { content: string; score: number } | null = null;
+    // 🌟 Check 1: Admission Queries across AI Knowledge & Admission page rules
+    if (
+      rawQ.includes('admi') || 
+      normalizedQ.includes('admis') || 
+      rawQ.includes('apply') || 
+      rawQ.includes('seat') ||
+      rawQ.includes('eligib') ||
+      rawQ.includes('document') ||
+      rawQ.includes('how to join')
+    ) {
+      const adm = knowledgeSource.find(k => k.topic?.toLowerCase().includes('admi') || k.content?.toLowerCase().includes('admission'));
+      if (adm) return adm.content;
+      return `🎓 **Admission Information:**\n• Admissions for **BCA** & **B.Sc** are based on 10+2 / PUC Merit.\n• Documents Required: SSLC & PUC Marks Cards, Transfer Certificate, Category/Income Certificate.\n• Call admission office: **${settings?.phone || '0816-2203500'}** for current batch applications.`;
+    }
 
+    // 🌟 Check 2: Courses / Fees Queries across Courses DB
+    if (
+      rawQ.includes('cours') || 
+      rawQ.includes('branch') || 
+      rawQ.includes('bca') || 
+      rawQ.includes('bsc') || 
+      rawQ.includes('msc') ||
+      rawQ.includes('sub') ||
+      rawQ.includes('syllabus') ||
+      rawQ.includes('fee') ||
+      rawQ.includes('cost') ||
+      rawQ.includes('amount')
+    ) {
+      const crsMatch = knowledgeSource.find(k => k.topic?.toLowerCase().includes('cours') || k.topic?.toLowerCase().includes('fee'));
+      if (crsMatch && (rawQ.includes('fee') || rawQ.includes('scholar'))) return crsMatch.content;
+
+      if (courses && courses.length > 0) {
+        return `📚 **Programs Offered at UCS Tumkur:**\n\n${courses.map((c: any) => `• **${c.name}** (${c.duration || '3 Years'})\n  Eligibility: ${c.eligibility || 'PUC / 10+2 with Science/Maths'}\n  Fees: *${c.fees || 'As per govt norms'}*`).join('\n\n')}\n\nVisit the **Courses** tab for full syllabus details.`;
+      }
+      if (crsMatch) return crsMatch.content;
+    }
+
+    // 🌟 Check 3: About Institution, Principal, HODs & Departments DB
+    if (
+      rawQ.includes('dept') || 
+      rawQ.includes('department') || 
+      rawQ.includes('hod') || 
+      rawQ.includes('head') || 
+      rawQ.includes('facult') ||
+      rawQ.includes('teach') ||
+      rawQ.includes('staff') ||
+      rawQ.includes('about') ||
+      rawQ.includes('princ')
+    ) {
+      if (departments && departments.length > 0) {
+        return `🏛️ **Academic Departments at UCS Tumkur:**\n\n${departments.map((d: any) => `• **${d.name}**\n  Head: Dr./Prof. ${d.head || 'HOD'}\n  ${d.description || ''}`).join('\n\n')}`;
+      }
+    }
+
+    // 🌟 Check 4: FAQ Data Matching
+    if (faqs && faqs.length > 0) {
+      for (const faq of faqs) {
+        const qText = (faq.question || '').toLowerCase();
+        if (cleanTokens.some(t => qText.includes(t)) || rawQ.includes(qText)) {
+          return `💡 **FAQ - ${faq.question}**\n\n${faq.answer}`;
+        }
+      }
+    }
+
+    // 🌟 Check 5: Contact, Phone, Location & Address
+    if (
+      rawQ.includes('contact') || 
+      rawQ.includes('phone') || 
+      rawQ.includes('call') || 
+      rawQ.includes('email') || 
+      rawQ.includes('address') || 
+      rawQ.includes('locat') || 
+      rawQ.includes('map') || 
+      rawQ.includes('help')
+    ) {
+      return `📍 **Campus Contact & Helpdesk:**\n• **Institution:** ${settings?.college_name || 'University College of Science, Tumkur'}\n• **Address:** ${settings?.address || 'Tumkur University Campus, BH Road, Tumkur - 572103'}\n• **Phone:** 📞 **${settings?.phone || '0816-2203500'}**\n• **Email:** 📧 **${settings?.email || 'ucscience@tumkuruniversity.ac.in'}**\n• **Website:** 🌐 https://tumkuruniversity.ac.in`;
+    }
+
+    // 🌟 Check 6: Hostel, Facilities, NSS, Sports
+    if (rawQ.includes('host') || rawQ.includes('room') || rawQ.includes('stay') || rawQ.includes('mess')) {
+      const h = knowledgeSource.find(k => k.topic?.toLowerCase().includes('host'));
+      if (h) return h.content;
+    }
+
+    if (rawQ.includes('sport') || rawQ.includes('gym') || rawQ.includes('nss') || rawQ.includes('activ')) {
+      const s = knowledgeSource.find(k => k.topic?.toLowerCase().includes('sport') || k.topic?.toLowerCase().includes('nss'));
+      if (s) return s.content;
+    }
+
+    // 🌟 Check 7: Deep Fuzzy Matching on all AI Knowledge
+    let bestMatch: { content: string; score: number } | null = null;
     for (const item of knowledgeSource) {
       const topic = (item.topic || '').toLowerCase().trim();
       const content = (item.content || '').toLowerCase();
       let score = 0;
 
-      // Exact phrase match
-      if (rawQ === topic) score += 100;
-      if (rawQ.includes(topic) || topic.includes(rawQ)) score += 50;
+      if (rawQ === topic || normalizedQ === topic) score += 100;
+      if (rawQ.includes(topic) || topic.includes(rawQ) || normalizedQ.includes(topic)) score += 50;
 
-      const topicTokens = topic.replace(/[^a-zA-Z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length >= 2);
-
-      // Token overlap
       for (const token of cleanTokens) {
-        if (topicTokens.includes(token)) score += 25;
-        if (topic.includes(token)) score += 15;
-        if (content.includes(token)) score += 5;
+        const tokenStem = token.substring(0, Math.min(token.length, 4));
+        if (topic.includes(tokenStem)) score += 30;
+        if (content.includes(tokenStem)) score += 15;
       }
 
       if (score > 0 && (!bestMatch || score > bestMatch.score)) {
@@ -290,28 +379,16 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       }
     }
 
-    // High confidence threshold (even 1-2 keywords matched)
-    if (bestMatch && bestMatch.score >= 5) {
+    if (bestMatch && bestMatch.score >= 15) {
       return bestMatch.content;
     }
 
-    // Direct fallbacks for common queries
-    if (cleanTokens.some(k => ['admission', 'apply', 'join', 'seat', 'application'].includes(k))) {
-      const adm = knowledgeSource.find(k => k.topic?.toLowerCase().includes('admission'));
-      if (adm) return adm.content;
-    }
-
-    if (cleanTokens.some(k => ['course', 'branch', 'bca', 'bsc', 'msc'].includes(k))) {
-      if (courses && courses.length > 0) {
-        return `We offer premier programs:\n\n${courses.map((c: any) => `• **${c.name}** (${c.duration || '3 Years'}) - Fees: *${c.fees || 'As per norms'}*`).join('\n')}\n\nCheck the **Courses** page for more details.`;
-      }
-    }
-
+    // Greetings
     if (['hi', 'hello', 'hey', 'namaste', 'start'].some(g => rawQ.startsWith(g))) {
-      return `Hello! 👋 How can I assist you with **admissions, courses, fees, hostels, or campus details** today?`;
+      return `Hello! 👋 How can I assist you with **admissions, courses, fees, hostels, departments, or campus details** today?`;
     }
 
-    return `Thank you for your question! For details regarding "${query}", please contact the college helpdesk directly at **${settings?.phone || '0816-2203500'}** or visit https://tumkuruniversity.ac.in`;
+    return `Thank you for your question! For specific queries regarding "${query}", please contact the college helpdesk directly at 📞 **${settings?.phone || '0816-2203500'}** or visit https://tumkuruniversity.ac.in`;
   };
 
   const handleSend = async (e?: React.FormEvent, customText?: string) => {
@@ -399,7 +476,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-amber-50/70 via-teal-50/50 to-indigo-50/70 font-sans text-slate-800">
       
-      {/* 🌟 Header Section 🌟 */}
+      {/* Header */}
       <header className="bg-gradient-to-r from-teal-700 via-emerald-600 to-teal-800 text-white py-4 px-4 shadow-md text-center shrink-0">
         <div className="max-w-5xl mx-auto flex flex-col items-center gap-1.5">
           <div className="p-1.5 bg-white/20 backdrop-blur-md rounded-2xl border border-white/30">
@@ -416,12 +493,11 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
 
       <AnnouncementBar />
 
-      {/* 🌟 Main Chat Area - Expanded to Fill Entire Page Height 🌟 */}
+      {/* Main Chat Box - Full Width and Full Height */}
       <main className="flex-1 flex flex-col w-full max-w-6xl mx-auto p-2 sm:p-4 min-h-0">
-        
         <div className="flex-1 bg-white/95 backdrop-blur-xl rounded-3xl border border-teal-100 shadow-xl flex flex-col overflow-hidden w-full h-full min-h-[620px]">
           
-          {/* Top Bar inside Chatbox */}
+          {/* Top Bar */}
           <div className="bg-slate-50/90 px-4 md:px-6 py-3 border-b border-slate-200/80 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               <div className="h-9 w-9 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md">
@@ -460,7 +536,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
             </div>
           </div>
 
-          {/* 🌟 Transcript Stream - Full Width with Complete Text Visibility 🌟 */}
+          {/* Transcript Stream */}
           <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-4 bg-white/60">
             {messages.map((msg) => (
               <div key={msg.id} className={`flex gap-3 w-full ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -561,7 +637,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
         </div>
       </main>
 
-      {/* Modal for Prompt management */}
+      {/* Modal for Quick Prompts */}
       {isPromptModalOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200">
