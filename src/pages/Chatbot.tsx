@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { useCollegeSettings, useCourses, useDepartments, useFAQs } from '@/hooks/useCollegeData';
 import type { Route } from '@/types/route';
 
 interface Message {
@@ -37,6 +36,7 @@ interface ChatbotProps {
   onNavigate?: (route: Route) => void;
 }
 
+// 🌟 Fallback Baseline Data (In case Supabase is offline) 🌟
 const DEFAULT_DEPTS = [
   { name: 'Department of Computer Science & BCA', head: 'Dr. Ramani', description: 'Offering BCA, AI, data science, and web development with modern computer labs.' },
   { name: 'Department of Physics & Electronics', head: 'Dr. Shwetha N.', description: 'Equipped with advanced research laboratories in electronics and material science.' },
@@ -44,48 +44,29 @@ const DEFAULT_DEPTS = [
   { name: 'Department of Chemistry & Biochemistry', head: 'Dr. Geetha S.', description: 'Organic synthesis, environmental chemistry, and chemical analysis.' }
 ];
 
-const DEFAULT_AI_KNOWLEDGE = [
-  { 
-    id: 'kn-1', 
-    topic: 'Admission Process', 
-    content: '🎓 **Admission Process & Eligibility:**\n\n1. **Application:** Submit application online or directly at the college admission desk.\n2. **Eligibility:** PUC / 10+2 with Science / Mathematics stream for BCA & B.Sc.\n3. **Required Documents:** 10th & 12th Marks Cards, Transfer Certificate (TC), Category & Income Certificates.\n4. **Selection:** Merit-based admission followed by document verification.\n\n📞 Admission Helpline: **0816-2203500**.' 
-  },
-  { 
-    id: 'kn-2', 
-    topic: 'Courses Offered', 
-    content: '📚 **Academic Programs Offered:**\n\n• **BCA** (Bachelor of Computer Applications) - 3 Years\n• **B.Sc** (PMCs, CBZ, Electronics, Biotechnology, Data Science) - 3 Years\n• **M.Sc** (Computer Science, Physics, Chemistry, Mathematics) - 2 Years\n\nAll programs are affiliated with Tumkur University with modern lab facilities.' 
-  },
-  { 
-    id: 'kn-3', 
-    topic: 'Fees & Scholarships', 
-    content: '💰 **Fee Structure & Financial Aid:**\n\n• Fees follow **Karnataka State Government norms** (Approx Rs. 25,000 to Rs. 35,000 per year for BCA depending on merit/quota).\n• **Scholarships:** SSP (State Scholarship Portal) and NSP (National Scholarship Portal) are available for eligible students.' 
-  },
-  { 
-    id: 'kn-4', 
-    topic: 'Hostel Facilities', 
-    content: '🏢 **Hostel Accommodation:**\n\n• Dedicated and secure hostels for both **Boys and Girls** situated near the campus.\n• Includes hygienic mess food, 24/7 security, purified drinking water, and Wi-Fi study halls.' 
-  },
-  { 
-    id: 'kn-5', 
-    topic: 'College Helpdesk & Contact', 
-    content: '📍 **College Contact Information:**\n\n• **Institution:** University College of Science, Tumkur\n• **Address:** BH Road, Tumkur - 572103\n• **Phone:** 0816-2203500\n• **Email:** ucscience@tumkuruniversity.ac.in\n• **Website:** https://tumkuruniversity.ac.in' 
-  },
-  { 
-    id: 'kn-6', 
-    topic: 'Sports & NSS', 
-    content: '🏆 **Sports, NSS & Extracurriculars:**\n\n• Active **NSS** and **Youth Red Cross** units organizing state camps.\n• Extensive sports grounds for cricket, volleyball, football, indoor badminton, and gym.' 
-  }
+const DEFAULT_COURSES = [
+  { name: 'Bachelor of Computer Applications (BCA)', code: 'BCA', duration: '3 Years (6 Semesters)', eligibility: '10+2 / PUC Pass with Mathematics, Statistics, or Computer Science', fees: 'Rs. 25,000 / Year', seats: '60 Seats', description: 'Comprehensive curriculum in programming languages, databases, and AI.' },
+  { name: 'Bachelor of Science (B.Sc)', code: 'B.Sc (PMCs / CBZ)', duration: '3 Years (6 Semesters)', eligibility: '10+2 / PUC Science Stream', fees: 'Rs. 18,000 / Year', seats: '120 Seats', description: 'Physical and biological sciences with modern lab practicals.' }
+];
+
+const DEFAULT_ADMISSION_INFO = [
+  { category: 'admission', title: 'Admission Process', content: 'Submit 10th & 12th/PUC marks cards along with TC and application form. Selection is merit-based followed by document verification.' },
+  { category: 'eligibility', title: 'Eligibility Criteria', content: 'Applicants must have cleared the Karnataka 2nd PUC examination or equivalent 10+2 with qualifying marks.' },
+  { category: 'fees', title: 'Fee Payment & Concessions', content: 'Tuition fees must be paid per year. Post-matric scholarships (SSP/NSP) apply for eligible candidates.' }
+];
+
+const DEFAULT_FAQS = [
+  { question: 'How do I apply for BCA admission in UCS Tumkur?', answer: 'You can apply online through this admission portal or visit the college admission desk with original copies of your marks cards.' },
+  { question: 'What are the college working and library hours?', answer: 'Regular classes run from 9:30 AM to 4:30 PM. The library remains open until 5:30 PM.' },
+  { question: 'Are hostel facilities available?', answer: 'Yes, separate hostel facilities with mess services are provided for boys and girls near campus.' }
 ];
 
 const DEFAULT_PROMPTS: QuickPrompt[] = [
   { id: '1', label: 'Admission Process', prompt: 'Tell me about admission process' },
   { id: '2', label: 'Available Courses', prompt: 'What courses are offered?' },
-  { id: '3', label: 'Hostel & Campus', prompt: 'Tell me about hostel and facilities' },
+  { id: '3', label: 'Department HODs', prompt: 'Who are the department heads?' },
   { id: '4', label: 'Contact Helpdesk', prompt: 'How to contact college office?' },
 ];
-
-const KNOWLEDGE_KEY = 'ucs_admin_knowledge';
-const DEPT_STORAGE_KEY = 'ucs_crud_departments';
 
 function FormattedText({ text }: { text: string }) {
   const parseContent = (input: string) => {
@@ -100,7 +81,7 @@ function FormattedText({ text }: { text: string }) {
   };
 
   return (
-    <div className="space-y-1.5 text-slate-800 leading-relaxed text-sm md:text-base">
+    <div className="space-y-1.5 text-slate-800 leading-relaxed text-xs sm:text-sm">
       {text.split('\n').map((line, idx) => (
         <p
           key={idx}
@@ -114,10 +95,6 @@ function FormattedText({ text }: { text: string }) {
 
 export function Chatbot({ onNavigate }: ChatbotProps) {
   const { user, isAdmin: contextIsAdmin } = useAuth();
-  const { settings } = useCollegeSettings();
-  const { courses } = useCourses();
-  const { departments } = useDepartments();
-  const { faqs } = useFAQs();
 
   const getAdminStatus = () => {
     try {
@@ -141,28 +118,28 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     {
       id: 'welcome',
       sender: 'bot',
-      text: `Hello! 👋 Welcome to **University College of Science, Tumkur**.\nI am your **AI Admission & Campus Assistant**.\nHow can I assist you today?`,
+      text: `Hello! 👋 Welcome to **University College of Science, Tumkur**.\nI am your **AI Admission & Campus Assistant**.\nI can answer questions about **Admissions, Courses, HODs, Fees, Hostels, and Contact details**.\nHow can I help you today?`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
     },
   ]);
 
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  
-  const [dynamicKnowledge, setDynamicKnowledge] = useState<any[]>(() => {
-    try {
-      const local = localStorage.getItem(KNOWLEDGE_KEY);
-      if (local) {
-        const parsed = JSON.parse(local);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-      return DEFAULT_AI_KNOWLEDGE;
-    } catch {
-      return DEFAULT_AI_KNOWLEDGE;
-    }
-  });
-
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // 🌐 Live Knowledge Pools across ALL Pages 🌐
+  const [kbList, setKbList] = useState<any[]>([]);
+  const [coursesList, setCoursesList] = useState<any[]>(DEFAULT_COURSES);
+  const [deptsList, setDeptsList] = useState<any[]>(DEFAULT_DEPTS);
+  const [admissionList, setAdmissionList] = useState<any[]>(DEFAULT_ADMISSION_INFO);
+  const [faqsList, setFaqsList] = useState<any[]>(DEFAULT_FAQS);
+  const [settingsData, setSettingsData] = useState<any>({
+    college_name: 'University College Of Science, Tumkur',
+    address: 'Tumkur University Campus, BH Road, Tumkur - 572103',
+    phone: '0816-2203500',
+    email: 'ucscience@tumkuruniversity.ac.in',
+    website: 'https://tumkuruniversity.ac.in'
+  });
 
   const [quickPrompts, setQuickPrompts] = useState<QuickPrompt[]>(() => {
     try {
@@ -182,39 +159,46 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     setIsAdminState(getAdminStatus());
   }, [user, contextIsAdmin]);
 
-  const loadData = async () => {
+  // 🌟 Load Data From ALL Tables in Parallel 🌟
+  const fetchAllWebsiteData = async () => {
     try {
-      const { data: kbData, error: kbErr } = await supabase
-        .from('chatbot_knowledge')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // 1. Fetch AI Knowledge
+      const { data: kb } = await supabase.from('chatbot_knowledge').select('*');
+      if (kb && kb.length > 0) setKbList(kb);
 
-      if (!kbErr && kbData && kbData.length > 0) {
-        setDynamicKnowledge(kbData);
-        localStorage.setItem(KNOWLEDGE_KEY, JSON.stringify(kbData));
-      } else {
-        const localK = localStorage.getItem(KNOWLEDGE_KEY);
-        if (localK) setDynamicKnowledge(JSON.parse(localK));
-      }
+      // 2. Fetch Courses
+      const { data: crs } = await supabase.from('college_courses').select('*');
+      if (crs && crs.length > 0) setCoursesList(crs);
 
-      const { data: promptData } = await supabase
-        .from('quick_prompts')
-        .select('*')
-        .order('created_at', { ascending: true });
+      // 3. Fetch Departments / HODs (About Page)
+      const { data: dpt } = await supabase.from('college_departments').select('*');
+      if (dpt && dpt.length > 0) setDeptsList(dpt);
 
-      if (promptData && promptData.length > 0) {
-        setQuickPrompts(promptData);
-        localStorage.setItem('ucs_quick_prompts', JSON.stringify(promptData));
-      }
+      // 4. Fetch Admission Guidelines
+      const { data: adm } = await supabase.from('college_information').select('*');
+      if (adm && adm.length > 0) setAdmissionList(adm);
+
+      // 5. Fetch FAQs
+      const { data: fq } = await supabase.from('college_faqs').select('*');
+      if (fq && fq.length > 0) setFaqsList(fq);
+
+      // 6. Fetch Settings / Contact
+      const { data: st } = await supabase.from('college_settings').select('*').limit(1).maybeSingle();
+      if (st) setSettingsData((prev: any) => ({ ...prev, ...st }));
+
+      // 7. Quick Prompts
+      const { data: qp } = await supabase.from('quick_prompts').select('*').order('created_at', { ascending: true });
+      if (qp && qp.length > 0) setQuickPrompts(qp);
+
     } catch (err) {
-      console.error('Fetch error:', err);
+      console.warn('Sync website data notice:', err);
     }
   };
 
   useEffect(() => {
-    loadData();
-    window.addEventListener('storage', loadData);
-    return () => window.removeEventListener('storage', loadData);
+    fetchAllWebsiteData();
+    window.addEventListener('storage', fetchAllWebsiteData);
+    return () => window.removeEventListener('storage', fetchAllWebsiteData);
   }, []);
 
   useEffect(() => {
@@ -234,165 +218,118 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       }
     } catch {}
 
-    const nowIso = new Date().toISOString();
-    const uniqueId = 'chat-' + Date.now();
-
     const payload = {
-      id: uniqueId,
+      id: 'chat-' + Date.now(),
       user_name: studentName,
       user_email: studentEmail,
       message: userMsg,
       user_query: userMsg,
       response: aiReply,
       bot_reply: aiReply,
-      created_at: nowIso
+      created_at: new Date().toISOString()
     };
 
     try {
       await supabase.from('chat_history').insert([payload]);
     } catch {}
-
-    try {
-      const existing = localStorage.getItem('ucs_admin_chat_logs');
-      const list = existing ? JSON.parse(existing) : [];
-      localStorage.setItem('ucs_admin_chat_logs', JSON.stringify([{
-        id: uniqueId,
-        user: studentName,
-        userQuery: userMsg,
-        botReply: aiReply,
-        time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
-      }, ...list]));
-      window.dispatchEvent(new Event('storage'));
-    } catch {}
   };
 
-  // 🌟 Strict Priority Search Algorithm 🌟
-  const analyzeAndReply = (query: string): string => {
+  // 🧠 Universal Site-Wide Intelligent Semantic Reasoner 🧠
+  const analyzeAllSources = (query: string): string => {
     const q = query.toLowerCase().trim();
+    const tokens = q.replace(/[^a-zA-Z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length >= 2);
 
-    let knowledgeBase = dynamicKnowledge;
-    try {
-      const local = localStorage.getItem(KNOWLEDGE_KEY);
-      if (local) knowledgeBase = JSON.parse(local);
-    } catch {}
-
-    let allDepts = departments && departments.length > 0 ? departments : DEFAULT_DEPTS;
-    try {
-      const localDepts = localStorage.getItem(DEPT_STORAGE_KEY);
-      if (localDepts) allDepts = JSON.parse(localDepts);
-    } catch {}
-
-    // 1️⃣ Priority: Department Head / HOD
-    if (
-      q.includes('head') || 
-      q.includes('hod') || 
-      q.includes('ramani') || 
-      q.includes('shwetha') || 
-      q.includes('manjunath') || 
-      q.includes('geetha') ||
-      (q.includes('bca') && q.includes('head')) ||
-      (q.includes('computer') && q.includes('head'))
-    ) {
-      for (const d of allDepts) {
+    // 1️⃣ DOMAIN: ABOUT / DEPARTMENTS / HODs (Check college_departments)
+    const isDeptOrHODQuery = q.includes('head') || q.includes('hod') || q.includes('dept') || q.includes('faculty') || q.includes('staff') || q.includes('ramani') || q.includes('shwetha') || q.includes('manjunath') || q.includes('geetha');
+    if (isDeptOrHODQuery) {
+      for (const d of deptsList) {
         const dName = (d.name || '').toLowerCase();
         const dHead = (d.head || '').toLowerCase();
         
         if (
           (dHead && q.includes(dHead)) ||
-          (q.includes('bca') && dName.includes('bca')) ||
+          (q.includes('bca') && (dName.includes('bca') || dName.includes('computer'))) ||
           (q.includes('computer') && dName.includes('computer')) ||
           (q.includes('physics') && dName.includes('physics')) ||
           (q.includes('math') && dName.includes('math')) ||
           (q.includes('chem') && dName.includes('chem'))
         ) {
-          return `🏛️ **${d.name}:**\n• **Head of Department (HOD):** ${d.head}\n• **Overview:** ${d.description || 'Equipped with modern lab facilities and experienced faculty.'}`;
+          return `🏛️ **${d.name}:**\n• **Head of Department (HOD):** ${d.head}\n• **Overview:** ${d.description || 'Equipped with modern lab infrastructure and experienced faculty.'}`;
         }
       }
-      return `🏛️ **Department Heads at UCS Tumkur:**\n\n${allDepts.map((d: any) => `• **${d.name}**\n  👤 Head: **${d.head}**\n  ${d.description || ''}`).join('\n\n')}`;
+      return `🏛️ **Academic Departments & Heads:**\n\n${deptsList.map((d: any) => `• **${d.name}**\n  👤 Head: **${d.head}**\n  ${d.description || ''}`).join('\n\n')}`;
     }
 
-    // 2️⃣ Priority: Admission
-    if (
-      q.includes('admi') || 
-      q.includes('apply') || 
-      q.includes('seat') || 
-      q.includes('eligib') || 
-      q.includes('join') || 
-      q.includes('form') ||
-      q.includes('how to apply')
-    ) {
-      const adm = knowledgeBase.find(k => 
-        (k.topic && k.topic.toLowerCase().includes('admi')) || 
-        (k.content && k.content.toLowerCase().includes('admission'))
-      );
-      if (adm) return adm.content;
-      return DEFAULT_AI_KNOWLEDGE[0].content;
-    }
-
-    // 3️⃣ Priority: Fees & Scholarships
-    if (q.includes('fee') || q.includes('cost') || q.includes('scholar') || q.includes('ssp') || q.includes('nsp') || q.includes('amount') || q.includes('pay')) {
-      const fee = knowledgeBase.find(k => 
-        (k.topic && (k.topic.toLowerCase().includes('fee') || k.topic.toLowerCase().includes('scholar'))) ||
-        (k.content && k.content.toLowerCase().includes('fee'))
-      );
-      if (fee) return fee.content;
-      return DEFAULT_AI_KNOWLEDGE[2].content;
-    }
-
-    // 4️⃣ Priority: Courses
-    if (q.includes('cours') || q.includes('branch') || q.includes('program') || q.includes('bca') || q.includes('bsc') || q.includes('msc') || q.includes('degre')) {
-      const crs = knowledgeBase.find(k => k.topic && k.topic.toLowerCase().includes('cours'));
-      if (crs) return crs.content;
-      if (courses && courses.length > 0) {
-        return `📚 **Programs Offered at UCS Tumkur:**\n\n${courses.map((c: any) => `• **${c.name}** (${c.duration || '3 Years'})\n  Eligibility: ${c.eligibility || 'PUC/10+2 with Science/Maths'}\n  Fees: *${c.fees || 'As per govt norms'}*`).join('\n\n')}`;
+    // 2️⃣ DOMAIN: ADMISSIONS (Check college_information & AI Knowledge)
+    const isAdmissionQuery = q.includes('admi') || q.includes('apply') || q.includes('seat') || q.includes('eligib') || q.includes('join') || q.includes('form') || q.includes('how to apply');
+    if (isAdmissionQuery) {
+      // Find from college_information table
+      const admInfo = admissionList.filter(a => (a.category || '').toLowerCase() === 'admission' || (a.category || '').toLowerCase() === 'eligibility');
+      if (admInfo.length > 0) {
+        return `🎓 **Admission Guidelines & Eligibility:**\n\n${admInfo.map(a => `• **${a.title}:**\n  ${a.content}`).join('\n\n')}\n\n📞 Admission Helpline: **${settingsData?.phone || '0816-2203500'}**`;
       }
-      return DEFAULT_AI_KNOWLEDGE[1].content;
+      return `🎓 **Admission Process & Eligibility:**\n\n1. **Eligibility:** PUC / 10+2 with Science / Mathematics.\n2. **Application:** Submit forms online or at the admission counter.\n3. **Documents:** 10th & 12th Marks Cards, TC, Category/Income certificates.\n4. **Selection:** Merit list followed by document verification.\n\n📞 Helpline: **${settingsData?.phone || '0816-2203500'}**`;
     }
 
-    // 5️⃣ Priority: Hostel
-    if (q.includes('host') || q.includes('room') || q.includes('stay') || q.includes('mess')) {
-      const h = knowledgeBase.find(k => k.topic && k.topic.toLowerCase().includes('host'));
-      return h ? h.content : DEFAULT_AI_KNOWLEDGE[3].content;
+    // 3️⃣ DOMAIN: FEES & SCHOLARSHIPS (Check college_information & courses)
+    const isFeeQuery = q.includes('fee') || q.includes('cost') || q.includes('scholar') || q.includes('ssp') || q.includes('nsp') || q.includes('amount') || q.includes('pay');
+    if (isFeeQuery) {
+      const feeInfo = admissionList.find(a => (a.category || '').toLowerCase() === 'fees');
+      const bcaCourse = coursesList.find(c => (c.name || '').toLowerCase().includes('bca') || (c.code || '').toLowerCase() === 'bca');
+      const bscCourse = coursesList.find(c => (c.name || '').toLowerCase().includes('b.sc') || (c.code || '').toLowerCase() === 'bsc');
+
+      let feeText = `💰 **Fee Structure & Scholarships:**\n\n`;
+      if (bcaCourse) feeText += `• **${bcaCourse.name}:** *${bcaCourse.fees || 'Rs. 25,000 / Year'}*\n`;
+      if (bscCourse) feeText += `• **${bscCourse.name}:** *${bscCourse.fees || 'Rs. 18,000 / Year'}*\n`;
+      feeText += `\n• **Scholarships:** SSP (State Scholarship Portal) and NSP post-matric scholarships apply for eligible SC/ST/OBC/Minority students.`;
+      if (feeInfo?.content) feeText += `\n• ${feeInfo.content}`;
+      return feeText;
     }
 
-    // 6️⃣ Priority: Contact & Helpdesk
-    if (q.includes('contact') || q.includes('phone') || q.includes('call') || q.includes('email') || q.includes('address') || q.includes('locat') || q.includes('help')) {
-      const c = knowledgeBase.find(k => k.topic && (k.topic.toLowerCase().includes('contact') || k.topic.toLowerCase().includes('help')));
-      if (c) return c.content;
-      return `📍 **Campus Contact Details:**\n• **Institution:** ${settings?.college_name || 'University College of Science, Tumkur'}\n• **Address:** ${settings?.address || 'Tumkur University Campus, BH Road, Tumkur - 572103'}\n• **Phone:** 📞 **0816-2203500**\n• **Email:** 📧 **${settings?.email || 'ucscience@tumkuruniversity.ac.in'}**\n• **Website:** 🌐 https://tumkuruniversity.ac.in`;
-    }
-
-    // 7️⃣ Priority: Sports & NSS
-    if (q.includes('sport') || q.includes('gym') || q.includes('nss') || q.includes('activ')) {
-      const s = knowledgeBase.find(k => k.topic && (k.topic.toLowerCase().includes('sport') || k.topic.toLowerCase().includes('nss')));
-      return s ? s.content : DEFAULT_AI_KNOWLEDGE[5].content;
-    }
-
-    // 8️⃣ Dynamic Knowledge
-    const tokens = q.replace(/[^a-zA-Z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length >= 2);
-    for (const item of knowledgeBase) {
-      const topic = (item.topic || '').toLowerCase();
-      const content = (item.content || '').toLowerCase();
-      if (tokens.some(t => topic.includes(t) || content.includes(t))) {
-        return item.content;
-      }
-    }
-
-    // 9️⃣ FAQ Matching
-    if (faqs && faqs.length > 0) {
-      for (const faq of faqs) {
-        if (faq.question && (q.includes(faq.question.toLowerCase()) || tokens.some(t => faq.question.toLowerCase().includes(t)))) {
-          return `💡 **FAQ:**\n**Q: ${faq.question}**\n\n${faq.answer}`;
+    // 4️⃣ DOMAIN: COURSES (Check college_courses table)
+    const isCourseQuery = q.includes('cours') || q.includes('branch') || q.includes('program') || q.includes('bca') || q.includes('bsc') || q.includes('msc') || q.includes('degree');
+    if (isCourseQuery) {
+      // Check for specific BCA request
+      if (q.includes('bca')) {
+        const bca = coursesList.find(c => (c.name || '').toLowerCase().includes('bca') || (c.code || '').toLowerCase() === 'bca');
+        if (bca) {
+          return `📚 **${bca.name} (${bca.code || 'BCA'}):**\n• **Duration:** ${bca.duration}\n• **Eligibility:** ${bca.eligibility}\n• **Tuition Fees:** ${bca.fees}\n• **Seats:** ${bca.seats}\n• **Description:** ${bca.description}`;
         }
       }
+      // Return full course combinations
+      return `📚 **Programs Offered at UCS Tumkur:**\n\n${coursesList.map((c: any) => `• **${c.name}** (${c.duration || '3 Years'})\n  Eligibility: ${c.eligibility}\n  Fees: *${c.fees}* | Seats: ${c.seats}`).join('\n\n')}`;
     }
 
-    // 🔟 Greetings
+    // 5️⃣ DOMAIN: CONTACT, PHONE & ADDRESS (Check college_settings)
+    const isContactQuery = q.includes('contact') || q.includes('phone') || q.includes('call') || q.includes('email') || q.includes('address') || q.includes('locat') || q.includes('help') || q.includes('website');
+    if (isContactQuery) {
+      return `📍 **Campus Contact & Office Details:**\n• **Institution:** ${settingsData?.college_name}\n• **Address:** ${settingsData?.address}\n• **Phone:** 📞 **${settingsData?.phone}**\n• **Email:** 📧 **${settingsData?.email}**\n• **Website:** 🌐 ${settingsData?.website}`;
+    }
+
+    // 6️⃣ DOMAIN: FAQS (Check college_faqs table)
+    for (const faq of faqsList) {
+      const fqQ = (faq.question || '').toLowerCase();
+      if (tokens.some(t => fqQ.includes(t) && t.length >= 3) || q.includes(fqQ)) {
+        return `💡 **FAQ:**\n**Q: ${faq.question}**\n\n${faq.answer}`;
+      }
+    }
+
+    // 7️⃣ DOMAIN: AI KNOWLEDGE BASE (Check chatbot_knowledge table)
+    for (const kb of kbList) {
+      const topic = (kb.topic || '').toLowerCase();
+      const content = (kb.content || '').toLowerCase();
+      if (q.includes(topic) || tokens.some(t => topic.includes(t) || content.includes(t))) {
+        return kb.content;
+      }
+    }
+
+    // 8️⃣ GREETINGS
     if (['hi', 'hello', 'hey', 'namaste', 'start'].some(g => q.startsWith(g))) {
-      return `Hello! 👋 How can I assist you with **admissions, courses, department heads, fees, hostels, or campus details** today?`;
+      return `Hello! 👋 Welcome to **University College of Science, Tumkur**.\nHow can I assist you with **Admissions, Courses, HODs, Fees, Hostels, or Contact details** today?`;
     }
 
-    return `Thank you for your question! For specific queries regarding "${query}", please contact the college helpdesk directly at 📞 **0816-2203500** or visit https://tumkuruniversity.ac.in`;
+    // Default Fallback
+    return `🎓 **UCS Tumkur Campus Helpdesk:**\nFor admission eligibility, course combinations, fee waivers, or department details, please contact the office at 📞 **${settingsData?.phone || '0816-2203500'}** or visit ${settingsData?.website || 'https://tumkuruniversity.ac.in'}`;
   };
 
   const handleSend = (e?: React.FormEvent, customText?: string) => {
@@ -411,20 +348,20 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     setInput('');
     setIsTyping(true);
 
-    const botResponseText = analyzeAndReply(textToSend);
+    const botReplyText = analyzeAllSources(textToSend);
 
     setTimeout(async () => {
       const botMessage: Message = {
         id: 'bot-' + Date.now(),
         sender: 'bot',
-        text: botResponseText,
+        text: botReplyText,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
       };
 
       setMessages((prev) => [...prev, botMessage]);
       setIsTyping(false);
-      await logDirectToSupabase(textToSend.trim(), botResponseText);
-    }, 200);
+      await logDirectToSupabase(textToSend.trim(), botReplyText);
+    }, 150);
   };
 
   const handleOpenAddModal = () => {
@@ -451,7 +388,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     localStorage.setItem('ucs_quick_prompts', JSON.stringify(updated));
 
     await supabase.from('quick_prompts').delete().eq('id', id);
-    await loadData();
+    await fetchAllWebsiteData();
   };
 
   const handleSavePrompt = async (e: React.FormEvent) => {
@@ -469,48 +406,43 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     setPromptLabel('');
     setPromptText('');
     setEditingPromptId(null);
-    await loadData();
+    await fetchAllWebsiteData();
   };
 
   const getPromptIcon = (index: number) => {
     const icons = [BookOpen, School, FileText, PhoneCall];
     const IconComp = icons[index % icons.length];
-    return <IconComp size={14} className="text-blue-600 shrink-0" />;
+    return <IconComp size={13} className="text-blue-600 shrink-0" />;
   };
 
   return (
     <div className="fixed inset-0 top-[60px] flex flex-col bg-slate-100 font-sans text-slate-800 z-10">
-      
-      {/* Main Chat Box - Fits Exactly into the Screen with Fixed Input Box at Bottom */}
       <main className="flex-1 flex flex-col w-full max-w-5xl mx-auto p-2 sm:p-4 min-h-0 h-full">
-        <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-lg flex flex-col overflow-hidden w-full h-full">
+        <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-md flex flex-col overflow-hidden w-full h-full">
           
-          {/* Header Inside Chat Window */}
-          <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-2.5">
-              <div className="h-8 w-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
-                <Bot size={18} />
+          {/* Top Bar */}
+          <div className="bg-slate-50 px-4 py-2 border-b border-slate-200 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                <Bot size={16} />
               </div>
               <div>
-                <h2 className="text-xs sm:text-sm font-black text-slate-800 flex items-center gap-1.5 leading-tight">
-                  <span>UCS AI Assistant</span>
-                  <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-1.5 py-0.2 rounded-full">Live</span>
-                </h2>
-                <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-semibold">
+                <h2 className="text-xs sm:text-sm font-black text-slate-800 leading-tight">UCS AI Assistant</h2>
+                <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-semibold">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Online</span>
+                  <span>Online (Connected to all Pages)</span>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1">
               {isAdminState && onNavigate && (
                 <button
                   type="button"
                   onClick={() => onNavigate('admin-dashboard')}
-                  className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
+                  className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
                 >
-                  <ShieldCheck size={13} />
+                  <ShieldCheck size={12} />
                   <span>Admin</span>
                 </button>
               )}
@@ -519,24 +451,22 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
                 className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
                 title="Reset Conversation"
               >
-                <RefreshCw size={15} />
+                <RefreshCw size={14} />
               </button>
             </div>
           </div>
 
-          {/* Transcript Message Feed */}
+          {/* Transcript Feed */}
           <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3 bg-white">
             {messages.map((msg) => (
-              <div key={msg.id} className={`flex gap-2.5 w-full ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                
+              <div key={msg.id} className={`flex gap-2 w-full ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.sender === 'bot' && (
                   <div className="h-7 w-7 rounded-lg bg-teal-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
-                    <Bot size={15} />
+                    <Bot size={14} />
                   </div>
                 )}
-
                 <div className={`space-y-1 ${msg.sender === 'user' ? 'max-w-[85%] sm:max-w-[70%]' : 'max-w-[95%] sm:max-w-[85%]'}`}>
-                  <div className={`p-3 sm:p-4 rounded-2xl shadow-2xs ${msg.sender === 'user' ? 'bg-blue-600 text-white rounded-tr-none font-medium text-xs sm:text-sm' : 'bg-slate-50 text-slate-800 border border-slate-200 rounded-tl-none text-xs sm:text-sm'}`}>
+                  <div className={`p-3 rounded-2xl shadow-2xs ${msg.sender === 'user' ? 'bg-blue-600 text-white rounded-tr-none font-medium text-xs sm:text-sm' : 'bg-slate-50 text-slate-800 border border-slate-200 rounded-tl-none text-xs sm:text-sm'}`}>
                     {msg.sender === 'user' ? (
                       <p className="leading-relaxed">{msg.text}</p>
                     ) : (
@@ -545,19 +475,16 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
                   </div>
                   <p className={`text-[10px] text-slate-400 px-1 font-semibold ${msg.sender === 'user' ? 'text-right' : 'text-left'}`}>{msg.timestamp}</p>
                 </div>
-
                 {msg.sender === 'user' && (
                   <div className="h-7 w-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
-                    <User size={15} />
+                    <User size={14} />
                   </div>
                 )}
-
               </div>
             ))}
-
             {isTyping && (
-              <div className="flex gap-2.5 justify-start items-center">
-                <div className="h-7 w-7 rounded-lg bg-teal-600 text-white flex items-center justify-center"><Bot size={15} /></div>
+              <div className="flex gap-2 justify-start items-center">
+                <div className="h-7 w-7 rounded-lg bg-teal-600 text-white flex items-center justify-center"><Bot size={14} /></div>
                 <div className="bg-slate-50 border border-slate-200 p-2.5 rounded-xl rounded-tl-none flex items-center gap-1">
                   <span className="h-1.5 w-1.5 bg-teal-600 rounded-full animate-bounce [animation-delay:-0.3s]" />
                   <span className="h-1.5 w-1.5 bg-teal-600 rounded-full animate-bounce [animation-delay:-0.15s]" />
@@ -570,11 +497,10 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
 
           {/* Quick Prompts Bar */}
           <div className="px-3 py-1.5 bg-slate-50 border-t border-slate-100 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
-            <span className="text-[11px] font-bold text-slate-400 uppercase shrink-0 flex items-center gap-1">
-              <Sparkles size={12} className="text-amber-500" />
+            <span className="text-[10px] font-bold text-slate-400 uppercase shrink-0 flex items-center gap-1">
+              <Sparkles size={11} className="text-amber-500" />
               <span>Ask:</span>
             </span>
-
             {quickPrompts.map((p, idx) => (
               <div key={p.id || idx} className="inline-flex items-center gap-1 shrink-0">
                 <button 
@@ -585,31 +511,29 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
                   {getPromptIcon(idx)}
                   <span>{p.label}</span>
                 </button>
-
                 {isAdminState && (
                   <div className="flex items-center bg-white border border-slate-200 rounded-md p-0.5">
-                    <button type="button" onClick={(e) => handleOpenEditModal(p, e)} className="p-0.5 text-slate-400 hover:text-blue-600 cursor-pointer"><Edit2 size={10} /></button>
-                    <button type="button" onClick={(e) => handleDeletePrompt(p.id, e)} className="p-0.5 text-slate-400 hover:text-rose-600 cursor-pointer"><Trash2 size={10} /></button>
+                    <button type="button" onClick={(e) => handleOpenEditModal(p, e)} className="p-0.5 text-slate-400 hover:text-blue-600 cursor-pointer"><Edit2 size={9} /></button>
+                    <button type="button" onClick={(e) => handleDeletePrompt(p.id, e)} className="p-0.5 text-slate-400 hover:text-rose-600 cursor-pointer"><Trash2 size={9} /></button>
                   </div>
                 )}
               </div>
             ))}
-
             {isAdminState && (
               <button type="button" onClick={handleOpenAddModal} className="p-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shrink-0 cursor-pointer">
-                <Plus size={13} />
+                <Plus size={12} />
               </button>
             )}
           </div>
 
-          {/* Fixed Bottom Input Chat Box */}
+          {/* Fixed Input Box */}
           <div className="p-2.5 sm:p-3 bg-white border-t border-slate-100 shrink-0">
             <form onSubmit={(e) => handleSend(e)} className="flex items-center gap-2">
               <input 
                 type="text" 
                 value={input} 
                 onChange={(e) => setInput(e.target.value)} 
-                placeholder="Ask admission, courses, BCA, HOD, hostel, fees..." 
+                placeholder="Ask about admissions, BCA, HODs, fees, courses, hostel..." 
                 className="flex-1 px-3.5 py-2.5 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-600 focus:bg-white text-xs sm:text-sm font-medium outline-none transition-all" 
               />
               <button 
@@ -625,7 +549,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
         </div>
       </main>
 
-      {/* Modal for Prompt Management */}
+      {/* Quick Prompt Modal */}
       {isPromptModalOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-5 max-w-sm w-full shadow-2xl border border-slate-200">
