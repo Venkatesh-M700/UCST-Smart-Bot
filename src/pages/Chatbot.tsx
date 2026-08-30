@@ -43,7 +43,7 @@ const DEFAULT_AI_KNOWLEDGE = [
   { 
     id: 'kn-1', 
     topic: 'Admission Process', 
-    content: '🎓 **Admission Process & Eligibility:**\n\n1. **Application:** Submit application online or collect it directly at the college admission office.\n2. **Eligibility:** PUC / 10+2 with Science / Mathematics for BCA & B.Sc streams.\n3. **Documents Required:** 10th & 12th Marks Cards, Transfer Certificate (TC), Category & Income Certificates.\n4. **Selection:** Merit-based admission followed by document verification.\n\n📞 Admission Helpline: **0816-2203500**.' 
+    content: '🎓 **Admission Process & Eligibility:**\n\n1. **Application:** Submit the application online or collect it directly at the college admission desk.\n2. **Eligibility:** 10+2 / PUC equivalent with minimum passing marks (Science/Maths stream for BCA & B.Sc programs).\n3. **Documents Required:** 10th & 12th Marks Cards, Transfer Certificate (TC), Migration Certificate, Category/Income certificates.\n4. **Selection:** Based on merit followed by document verification & fee payment.\n\n📞 For admission helpline, contact: **0816-2203500**.' 
   },
   { 
     id: 'kn-2', 
@@ -53,12 +53,12 @@ const DEFAULT_AI_KNOWLEDGE = [
   { 
     id: 'kn-3', 
     topic: 'Fees & Scholarships', 
-    content: '💰 **Fee Structure & Scholarships:**\n\n• Fees follow **Karnataka State Government norms** (Approx Rs. 25,000 to Rs. 35,000 per year for BCA depending on merit/quota).\n• **Scholarships:** SSP (State Scholarship Portal) and NSP (National Scholarship Portal) are applicable for eligible students.' 
+    content: '💰 **Fee Structure & Scholarships:**\n\n• Tuition fee follows **Karnataka State Government norms** (Approx Rs. 25,000 to Rs. 35,000 per year for BCA depending on merit/quota).\n• **Scholarships:** Eligible students can apply through SSP (State Scholarship Portal) and NSP (National Scholarship Portal).' 
   },
   { 
     id: 'kn-4', 
     topic: 'Hostel Facilities', 
-    content: '🏢 **Hostel Accommodation:**\n\n• Dedicated and secure hostels for both **Boys and Girls** near the campus.\n• Includes hygienic mess food, 24/7 security, purified drinking water, and Wi-Fi study halls.' 
+    content: '🏢 **Hostel Accommodation:**\n\n• Dedicated and secure hostels for both **Boys and Girls** situated near the campus.\n• Facilities include hygienic mess, 24/7 security, purified drinking water, and Wi-Fi study halls.' 
   },
   { 
     id: 'kn-5', 
@@ -68,7 +68,7 @@ const DEFAULT_AI_KNOWLEDGE = [
   { 
     id: 'kn-6', 
     topic: 'Sports & NSS', 
-    content: '🏆 **Sports, NSS & Extracurriculars:**\n\n• Active **NSS** and **Youth Red Cross** units organizing state camps.\n• Extensive sports grounds for cricket, volleyball, football, indoor badminton, and gym.' 
+    content: '🏆 **Sports, NSS & Extracurriculars:**\n\n• Active **NSS** and **Youth Red Cross** units organizing state camps.\n• Extensive sports grounds for cricket, volleyball, football, indoor badminton, and student gym.' 
   }
 ];
 
@@ -260,7 +260,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     } catch {}
   };
 
-  // 🌟 Instant Guaranteed Matching Engine 🌟
+  // 🌟 Deterministic Site-Wide Knowledge Matcher 🌟
   const generateBotReplyAsync = async (query: string): Promise<string> => {
     const rawQ = query.toLowerCase().trim();
     const cleanTokens = rawQ
@@ -268,7 +268,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       .split(/\s+/)
       .filter((w) => w.length >= 2);
 
-    // Knowledge source from storage & state
+    // Prepare Knowledge Pool
     let knowledgeSource: any[] = [];
     try {
       const local = localStorage.getItem(KNOWLEDGE_KEY);
@@ -280,7 +280,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       knowledgeSource = dynamicKnowledge.length > 0 ? dynamicKnowledge : DEFAULT_AI_KNOWLEDGE;
     }
 
-    // 1. ADMISSION CHECK (admi, admission, admisssion, apply, seat, eligibility)
+    // 1. ADMISSION CHECK (admi, admission, admisssion, apply, seat, eligibility, form)
     if (
       rawQ.includes('admi') || 
       rawQ.includes('apply') || 
@@ -362,8 +362,8 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       rawQ.includes('department') || 
       rawQ.includes('hod') || 
       rawQ.includes('head') || 
-      rawQ.includes('facult') ||
-      rawQ.includes('teach') ||
+      rawQ.includes('facult') || 
+      rawQ.includes('teach') || 
       rawQ.includes('about')
     ) {
       if (departments && departments.length > 0) {
@@ -651,7 +651,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
         </div>
       </main>
 
-      {/* Modal for Prompt Management */}
+      {/* Modal for Quick Prompts */}
       {isPromptModalOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200">
