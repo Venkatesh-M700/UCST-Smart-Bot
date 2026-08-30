@@ -13,13 +13,14 @@ import {
   Edit2,
   Trash2,
   X,
-  ShieldCheck
+  ShieldCheck,
+  ExternalLink,
+  MessageSquareQuote
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { useCollegeSettings, useCourses, useDepartments } from '@/hooks/useCollegeData';
-import { Logo } from '@/components/Logo';
-import { AnnouncementBar } from '@/components/AnnouncementBar';
+import { useCollegeSettings, useCourses } from '@/hooks/useCollegeData';
+import { PageContainer, PageHeader } from '@/components/ui';
 import type { Route } from '@/types/route';
 
 interface Message {
@@ -44,7 +45,7 @@ const DEFAULT_AI_KNOWLEDGE = [
   { id: 'kn-2', topic: 'Courses Offered', content: 'We offer premier programs:\n• **BCA** (Bachelor of Computer Applications)\n• **B.Sc** (PMCs, CBZ, Electronics, Biotechnology)\n• **M.Sc** programs with top-tier faculty and lab facilities.' },
   { id: 'kn-3', topic: 'Fees & Scholarships', content: 'Tuition fees follow **Karnataka state government norms** (Approx *Rs. 25,000/year* for BCA). Post-matric SSP, NSP scholarships and category fee concessions are available.' },
   { id: 'kn-4', topic: 'Hostel Facilities', content: '**UCS Tumkur** provides secure hostel accommodation with hygienic mess facilities, 24/7 security, and study halls for both boys and girls near the campus.' },
-  { id: 'kn-5', topic: 'College Helpdesk & Contact', content: '📍 **Address:** BH Road, Tumkur - 572103\n📞 **Phone:** 0816-2203500\n📧 **Email:** ucscience@tumkuruniversity.ac.in\n🌐 **Website:** https://tumkuruniversity.ac.in' },
+  { id: 'kn-5', topic: 'College Helpdesk & Contact', content: '📍 **Address:** BH Road, Tumkur - 572103\n📞 **Phone:** 0816-2203500\n📧 **Email:** ucscience@tumkuruniversity.ac.in\n🌐 **Official Website:** https://tumkuruniversity.ac.in' },
   { id: 'kn-6', topic: 'Sports & Gymnasium', content: '**UCS Tumkur** features dedicated sports facilities including cricket, volleyball, kabaddi grounds, indoor badminton, table tennis, and a modern student gym.' }
 ];
 
@@ -57,25 +58,32 @@ const DEFAULT_PROMPTS: QuickPrompt[] = [
 
 const KNOWLEDGE_KEY = 'ucs_admin_knowledge';
 
-// 🌟 Simple Markdown Parser for Bold, Italic & Line Breaks 🌟
+// 🌟 Ultra-Clean Robust Parser for Bold, Italic & Clickable Hyperlinks 🌟
 function FormattedText({ text }: { text: string }) {
-  const formatText = (input: string) => {
-    // Replace **bold** with <strong>
-    let formatted = input.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    // Replace *italic* with <em>
-    formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
-    // Replace _italic_ with <em>
-    formatted = formatted.replace(/_(.*?)_/g, '<em>$1</em>');
-    return formatted;
+  const parseContent = (input: string) => {
+    // 1. Convert Clickable URL Links first
+    let parsed = input.replace(
+      /(https?:\/\/[^\s]+)/g,
+      '<a href="$1" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-bold underline bg-blue-50 px-2 py-0.5 rounded-md hover:bg-blue-100 transition-colors break-all">$1 ↗</a>'
+    );
+
+    // 2. Bold tags (**word**)
+    parsed = parsed.replace(/\*\*(.+?)\*\*/g, '<strong class="font-extrabold text-slate-900">$1</strong>');
+
+    // 3. Italic tags (*word* or _word_)
+    parsed = parsed.replace(/\*([^\*]+?)\*/g, '<em class="italic text-slate-800 font-medium">$1</em>');
+    parsed = parsed.replace(/_([^_]+?)_/g, '<em class="italic text-slate-800 font-medium">$1</em>');
+
+    return parsed;
   };
 
   return (
-    <div className="space-y-1">
-      {text.split('\n').map((line, i) => (
-        <p 
-          key={i} 
-          className="leading-relaxed font-normal" 
-          dangerouslySetInnerHTML={{ __html: formatText(line) || '&nbsp;' }} 
+    <div className="space-y-1.5 text-slate-800 leading-relaxed text-sm md:text-[15px]">
+      {text.split('\n').map((line, idx) => (
+        <p
+          key={idx}
+          className="leading-relaxed"
+          dangerouslySetInnerHTML={{ __html: parseContent(line) || '&nbsp;' }}
         />
       ))}
     </div>
@@ -86,7 +94,6 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
   const { user, isAdmin: contextIsAdmin } = useAuth();
   const { settings } = useCollegeSettings();
   const { courses } = useCourses();
-  const { departments } = useDepartments();
 
   const getAdminStatus = () => {
     try {
@@ -294,16 +301,16 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     }
 
     if (['hi', 'hello', 'hey', 'namaste'].some(g => q.startsWith(g))) {
-      return `Hello! How can I assist you with **admissions, courses, fees, hostels, or campus details** today?`;
+      return `Hello! 👋 How can I assist you with **admissions, courses, fees, hostels, or campus details** today?`;
     }
 
     if (q.includes('course') || q.includes('bca') || q.includes('bsc')) {
       if (courses && courses.length > 0) {
-        return `We offer premier programs:\n\n${courses.map((c: any) => `• **${c.name}** (${c.duration || '3 Years'}) - Fees: *${c.fees || 'As per norms'}*`).join('\n')}\n\nCheck the Courses page for full details.`;
+        return `We offer premier programs:\n\n${courses.map((c: any) => `• **${c.name}** (${c.duration || '3 Years'}) - Fees: *${c.fees || 'As per norms'}*`).join('\n')}\n\nCheck the **Courses** page for more detailed information.`;
       }
     }
 
-    return `Thank you for your inquiry! For specific queries regarding "${query}", please contact the college helpdesk at **${settings?.phone || '0816-2203500'}**.`;
+    return `Thank you for your question! For specific queries regarding "${query}", please contact the college helpdesk directly at **${settings?.phone || '0816-2203500'}** or visit the official website: https://tumkuruniversity.ac.in`;
   };
 
   const handleSend = async (e?: React.FormEvent, customText?: string) => {
@@ -354,7 +361,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
 
   const handleDeletePrompt = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Delete this prompt?')) return;
+    if (!confirm('Delete this quick prompt?')) return;
 
     const updated = quickPrompts.filter((p) => p.id !== id);
     setQuickPrompts(updated);
@@ -385,175 +392,177 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
   const getPromptIcon = (index: number) => {
     const icons = [BookOpen, School, FileText, PhoneCall];
     const IconComp = icons[index % icons.length];
-    return <IconComp size={15} className="text-blue-600 shrink-0" />;
+    return <IconComp size={14} className="text-primary-600 shrink-0" />;
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-amber-50/70 via-teal-50/50 to-indigo-50/70 font-sans text-slate-800">
-      
+    <PageContainer>
+      {/* 🌟 Header Styled like About.tsx 🌟 */}
+      <PageHeader 
+        icon={MessageSquareQuote} 
+        title="AI Campus & Enquiry Assistant" 
+        subtitle="Instant answers for courses, eligibility, fees, hostels, and college facilities" 
+      />
+
       {isPromptModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200">
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
               <h3 className="font-extrabold text-base text-slate-800 flex items-center gap-2">
-                <Sparkles size={18} className="text-blue-600" />
-                <span>{editingPromptId ? 'Edit Prompt' : 'Add Prompt'}</span>
+                <Sparkles size={18} className="text-primary-600" />
+                <span>{editingPromptId ? 'Edit Quick Prompt' : 'Add Quick Prompt'}</span>
               </h3>
               <button onClick={() => setIsPromptModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer"><X size={20} /></button>
             </div>
             <form onSubmit={handleSavePrompt} className="space-y-3.5 text-sm">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Button Title</label>
-                <input type="text" required value={promptLabel} onChange={e => setPromptLabel(e.target.value)} placeholder="e.g. Sports" className="w-full p-2.5 bg-slate-50 border rounded-xl outline-none focus:border-blue-600 font-medium" />
+                <input type="text" required value={promptLabel} onChange={e => setPromptLabel(e.target.value)} placeholder="e.g. Sports" className="w-full p-2.5 bg-slate-50 border rounded-xl outline-none focus:border-primary-600 font-medium" />
               </div>
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Prompt Question</label>
-                <textarea required rows={2} value={promptText} onChange={e => setPromptText(e.target.value)} placeholder="Tell me about Sports" className="w-full p-2.5 bg-slate-50 border rounded-xl outline-none focus:border-blue-600 resize-none font-medium" />
+                <textarea required rows={2} value={promptText} onChange={e => setPromptText(e.target.value)} placeholder="Tell me about Sports" className="w-full p-2.5 bg-slate-50 border rounded-xl outline-none focus:border-primary-600 resize-none font-medium" />
               </div>
               <div className="flex gap-2 pt-1">
                 <button type="button" onClick={() => setIsPromptModalOpen(false)} className="flex-1 py-2.5 bg-slate-100 text-slate-600 font-bold rounded-xl cursor-pointer">Cancel</button>
-                <button type="submit" className="flex-1 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 cursor-pointer shadow-sm">Save</button>
+                <button type="submit" className="flex-1 py-2.5 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 cursor-pointer shadow-sm">Save</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      <header className="bg-gradient-to-r from-teal-700 via-emerald-600 to-teal-800 text-white py-5 px-4 shadow-md text-center">
-        <div className="max-w-5xl mx-auto flex flex-col items-center gap-2">
-          <div className="p-2 bg-white/20 backdrop-blur-md rounded-2xl border border-white/30">
-            <Logo logoUrl={settings?.logo_url} size="md" />
-          </div>
-          <h1 className="text-xl md:text-2xl font-bold">{settings?.college_name ?? 'University College Of Science, Tumkur'}</h1>
-          <p className="text-xs md:text-sm text-teal-100">{settings?.address ?? 'Tumkur University Campus, BH Road, Tumkur - 572103'}</p>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-xs md:text-sm text-amber-300">
-            <Sparkles size={14} />
-            <span className="text-white font-semibold">AI Admission & Campus Enquiry Assistant</span>
-          </div>
-        </div>
-      </header>
-
-      <AnnouncementBar />
-
-      <main className="flex-1 flex flex-col max-w-4xl w-full mx-auto p-3 md:p-6">
-        <div className="flex-1 bg-white/95 backdrop-blur-xl rounded-3xl border border-teal-100 shadow-xl flex flex-col overflow-hidden">
-          
-          <div className="bg-slate-50/80 px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md">
-                <Bot size={22} />
-              </div>
-              <div>
-                <h2 className="text-sm md:text-base font-black text-slate-800">UCS AI Assistant</h2>
-                <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold">
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Cloud Live Connected</span>
-                </div>
-              </div>
+      {/* Main Chatbot Window matching About.tsx card layout */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col overflow-hidden h-[75vh] md:h-[78vh]">
+        
+        {/* Top Chat Bar */}
+        <div className="bg-gray-50/90 px-4 md:px-6 py-3.5 border-b border-gray-200/80 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-2xl bg-primary-600 text-white flex items-center justify-center shadow-md">
+              <Bot size={22} />
             </div>
-
-            <div className="flex items-center gap-2">
-              {isAdminState && onNavigate && (
-                <button
-                  type="button"
-                  onClick={() => onNavigate('admin-dashboard')}
-                  className="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs md:text-sm font-bold flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                >
-                  <ShieldCheck size={16} />
-                  <span>Admin Panel</span>
-                </button>
-              )}
-              <button onClick={() => setMessages([messages[0]])} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl cursor-pointer">
-                <RefreshCw size={18} />
-              </button>
+            <div>
+              <h2 className="text-sm md:text-base font-black text-slate-800 flex items-center gap-1.5">
+                <span>UCS AI Assistant</span>
+                <span className="text-[10px] bg-primary-100 text-primary-700 font-bold px-2 py-0.5 rounded-full">v2.4</span>
+              </h2>
+              <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Cloud Live Connected</span>
+              </div>
             </div>
           </div>
 
-          {/* 🌟 Chat Message Transcripts with Larger Font & Bold/Italic Support 🌟 */}
-          <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-4">
-            {messages.map((msg) => (
-              <div key={msg.id} className={`flex gap-3 max-w-[90%] md:max-w-[80%] ${msg.sender === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}>
-                <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${msg.sender === 'user' ? 'bg-blue-600 text-white' : 'bg-teal-600 text-white'}`}>
-                  {msg.sender === 'user' ? <User size={18} /> : <Bot size={18} />}
-                </div>
-                <div className="space-y-1">
-                  <div className={`p-4 rounded-2xl text-sm md:text-[15px] leading-relaxed shadow-sm ${msg.sender === 'user' ? 'bg-blue-600 text-white rounded-tr-none font-medium' : 'bg-slate-50 text-slate-800 border border-slate-200 rounded-tl-none'}`}>
-                    <FormattedText text={msg.text} />
-                  </div>
-                  <p className={`text-[11px] text-slate-400 px-1 font-semibold ${msg.sender === 'user' ? 'text-right' : 'text-left'}`}>{msg.timestamp}</p>
-                </div>
-              </div>
-            ))}
-            {isTyping && (
-              <div className="flex gap-3 mr-auto items-center">
-                <div className="h-9 w-9 rounded-xl bg-teal-600 text-white flex items-center justify-center"><Bot size={18} /></div>
-                <div className="bg-slate-50 border p-3.5 rounded-2xl rounded-tl-none flex items-center gap-1.5">
-                  <span className="h-2 w-2 bg-teal-600 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                  <span className="h-2 w-2 bg-teal-600 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                  <span className="h-2 w-2 bg-teal-600 rounded-full animate-bounce" />
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Quick Prompts Bar */}
-          <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-100 flex items-center gap-2 overflow-x-auto no-scrollbar">
-            <span className="text-xs font-bold text-slate-400 uppercase shrink-0 flex items-center gap-1">
-              <Sparkles size={14} className="text-amber-500" />
-              <span>Ask:</span>
-            </span>
-
-            {quickPrompts.map((p, idx) => (
-              <div key={p.id || idx} className="inline-flex items-center gap-1 shrink-0">
-                <button 
-                  type="button" 
-                  onClick={() => handleSend(undefined, p.prompt)} 
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-blue-50 hover:text-blue-600 text-slate-700 border border-slate-200 rounded-xl text-xs md:text-sm font-bold cursor-pointer transition-colors shadow-2xs"
-                >
-                  {getPromptIcon(idx)}
-                  <span>{p.label}</span>
-                </button>
-
-                {isAdminState && (
-                  <div className="flex items-center bg-white border rounded-lg p-0.5">
-                    <button type="button" onClick={(e) => handleOpenEditModal(p, e)} className="p-1 text-slate-400 hover:text-blue-600 cursor-pointer"><Edit2 size={12} /></button>
-                    <button type="button" onClick={(e) => handleDeletePrompt(p.id, e)} className="p-1 text-slate-400 hover:text-rose-600 cursor-pointer"><Trash2 size={12} /></button>
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {isAdminState && (
-              <button type="button" onClick={handleOpenAddModal} className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shrink-0 cursor-pointer shadow-xs">
-                <Plus size={15} />
-              </button>
-            )}
-          </div>
-
-          {/* Input Chat Box */}
-          <div className="p-3.5 md:p-4 bg-white border-t border-slate-100">
-            <form onSubmit={(e) => handleSend(e)} className="flex items-center gap-2">
-              <input 
-                type="text" 
-                value={input} 
-                onChange={(e) => setInput(e.target.value)} 
-                placeholder="Ask about admissions, courses, fees, hostel, NSS, sports..." 
-                className="flex-1 px-4 py-3.5 bg-slate-50 rounded-2xl border border-slate-200 focus:border-blue-600 focus:bg-white text-sm md:text-base font-medium outline-none" 
-              />
-              <button 
-                type="submit" 
-                disabled={!input.trim()} 
-                className="h-12 w-12 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-md disabled:opacity-50 cursor-pointer shrink-0"
+          <div className="flex items-center gap-2">
+            {isAdminState && onNavigate && (
+              <button
+                type="button"
+                onClick={() => onNavigate('admin-dashboard')}
+                className="px-3.5 py-1.5 bg-primary-50 hover:bg-primary-100 text-primary-700 border border-primary-200 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
               >
-                <Send size={20} />
+                <ShieldCheck size={15} />
+                <span>Admin Panel</span>
               </button>
-            </form>
+            )}
+            <button 
+              onClick={() => setMessages([messages[0]])} 
+              className="p-2 text-slate-400 hover:text-slate-600 hover:bg-gray-100 rounded-xl cursor-pointer transition-colors"
+              title="Reset Conversation"
+            >
+              <RefreshCw size={18} />
+            </button>
           </div>
-
         </div>
-      </main>
-    </div>
+
+        {/* Chat Messages Section */}
+        <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-4 bg-white">
+          {messages.map((msg) => (
+            <div key={msg.id} className={`flex gap-3 max-w-[92%] md:max-w-[80%] ${msg.sender === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}>
+              <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs ${msg.sender === 'user' ? 'bg-primary-600 text-white' : 'bg-teal-600 text-white'}`}>
+                {msg.sender === 'user' ? <User size={18} /> : <Bot size={18} />}
+              </div>
+              <div className="space-y-1">
+                <div className={`p-4 rounded-2xl shadow-xs ${msg.sender === 'user' ? 'bg-primary-600 text-white rounded-tr-none font-medium' : 'bg-gray-50/90 text-slate-800 border border-gray-200/80 rounded-tl-none'}`}>
+                  {msg.sender === 'user' ? (
+                    <p className="leading-relaxed text-sm md:text-[15px]">{msg.text}</p>
+                  ) : (
+                    <FormattedText text={msg.text} />
+                  )}
+                </div>
+                <p className={`text-[11px] text-slate-400 px-1 font-semibold ${msg.sender === 'user' ? 'text-right' : 'text-left'}`}>{msg.timestamp}</p>
+              </div>
+            </div>
+          ))}
+
+          {isTyping && (
+            <div className="flex gap-3 mr-auto items-center">
+              <div className="h-9 w-9 rounded-xl bg-teal-600 text-white flex items-center justify-center"><Bot size={18} /></div>
+              <div className="bg-gray-50 border border-gray-200 p-3.5 rounded-2xl rounded-tl-none flex items-center gap-1.5">
+                <span className="h-2 w-2 bg-teal-600 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                <span className="h-2 w-2 bg-teal-600 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                <span className="h-2 w-2 bg-teal-600 rounded-full animate-bounce" />
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Quick Prompts Bar */}
+        <div className="px-4 py-2.5 bg-gray-50/80 border-t border-gray-100 flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <span className="text-xs font-bold text-slate-400 uppercase shrink-0 flex items-center gap-1">
+            <Sparkles size={14} className="text-amber-500" />
+            <span>Ask:</span>
+          </span>
+
+          {quickPrompts.map((p, idx) => (
+            <div key={p.id || idx} className="inline-flex items-center gap-1 shrink-0">
+              <button 
+                type="button" 
+                onClick={() => handleSend(undefined, p.prompt)} 
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-primary-50 hover:text-primary-700 text-slate-700 border border-gray-200 rounded-xl text-xs font-bold cursor-pointer transition-colors shadow-2xs"
+              >
+                {getPromptIcon(idx)}
+                <span>{p.label}</span>
+              </button>
+
+              {isAdminState && (
+                <div className="flex items-center bg-white border border-gray-200 rounded-lg p-0.5">
+                  <button type="button" onClick={(e) => handleOpenEditModal(p, e)} className="p-1 text-slate-400 hover:text-primary-600 cursor-pointer"><Edit2 size={11} /></button>
+                  <button type="button" onClick={(e) => handleDeletePrompt(p.id, e)} className="p-1 text-slate-400 hover:text-rose-600 cursor-pointer"><Trash2 size={11} /></button>
+                </div>
+              )}
+            </div>
+          ))}
+
+          {isAdminState && (
+            <button type="button" onClick={handleOpenAddModal} className="px-2.5 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold shrink-0 cursor-pointer shadow-xs">
+              <Plus size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* Input Chat Box */}
+        <div className="p-3.5 md:p-4 bg-white border-t border-gray-100">
+          <form onSubmit={(e) => handleSend(e)} className="flex items-center gap-2">
+            <input 
+              type="text" 
+              value={input} 
+              onChange={(e) => setInput(e.target.value)} 
+              placeholder="Ask about admissions, courses, fees, hostel, NSS, sports..." 
+              className="flex-1 px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-primary-600 focus:bg-white text-sm md:text-base font-medium outline-none transition-all" 
+            />
+            <button 
+              type="submit" 
+              disabled={!input.trim()} 
+              className="h-11 w-11 rounded-xl bg-primary-600 hover:bg-primary-700 text-white flex items-center justify-center shadow-md disabled:opacity-50 cursor-pointer shrink-0 transition-all"
+            >
+              <Send size={18} />
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </PageContainer>
   );
 }
 
