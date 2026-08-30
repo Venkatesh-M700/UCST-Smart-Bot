@@ -36,6 +36,7 @@ interface ChatbotProps {
   onNavigate?: (route: Route) => void;
 }
 
+// 🌟 Local Storage Keys from Pages 🌟
 const STORAGE_KEYS = {
   DEPTS: 'ucs_crud_departments',
   COURSES: 'ucs_courses_data',
@@ -67,6 +68,13 @@ const DEFAULT_ADMISSION = [
   { id: 'info-5', category: 'admission', title: '5) Fee Payment', content: 'Selected students must pay the prescribed admission fees.' },
   { id: 'info-6', category: 'admission', title: '6) Document Submission', content: 'Students must submit all the required documents for verification.' },
   { id: 'info-7', category: 'admission', title: '7) Admission Confirmation', content: 'After successful fee payment and document verification, the student\'s admission is confirmed.' }
+];
+
+const DEFAULT_FAQS = [
+  { question: 'How do I apply for BCA admission in UCS Tumkur?', answer: 'You can apply online through this admission portal or visit the college admission desk with original marks cards.' },
+  { question: 'What are the college working and library hours?', answer: 'Regular theory and practical classes run from 9:30 AM to 4:30 PM. The library remains open until 5:30 PM.' },
+  { question: 'Are hostel facilities available for outstation students?', answer: 'Yes, separate hostel facilities with mess services are provided for both boys and girls near campus.' },
+  { question: 'What scholarships are available for students?', answer: 'State Government SSP & NSP post-matric scholarships, fee concessions, and merit scholarships are available for eligible SC, ST, OBC, and minority students.' }
 ];
 
 const DEFAULT_PROMPTS: QuickPrompt[] = [
@@ -139,7 +147,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     depts: DEFAULT_DEPTS,
     courses: DEFAULT_COURSES,
     admission: DEFAULT_ADMISSION,
-    faqs: [] as any[],
+    faqs: DEFAULT_FAQS,
     settings: {
       college_name: 'University College of Science, Tumkur',
       address: 'Tumkur University Campus, BH Road, Tumkur - 572103',
@@ -183,7 +191,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     let freshDepts = DEFAULT_DEPTS;
     let freshCourses = DEFAULT_COURSES;
     let freshAdmission = DEFAULT_ADMISSION;
-    let freshFaqs: any[] = [];
+    let freshFaqs = DEFAULT_FAQS;
     let freshSettings = webData.settings;
     let freshKb: any[] = [];
 
@@ -226,7 +234,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       depts: freshDepts.length > 0 ? freshDepts : DEFAULT_DEPTS,
       courses: freshCourses.length > 0 ? freshCourses : DEFAULT_COURSES,
       admission: sortNaturally(freshAdmission.length > 0 ? freshAdmission : DEFAULT_ADMISSION),
-      faqs: freshFaqs,
+      faqs: freshFaqs.length > 0 ? freshFaqs : DEFAULT_FAQS,
       settings: freshSettings,
       knowledge: freshKb
     });
@@ -269,20 +277,27 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     } catch {}
   };
 
-  // 🧠 Absolute Direct Semantic Router with Zero FAQ False-Positives 🧠
+  // 🧠 Absolute Direct Router 🧠
   const parseAndAnswer = (query: string): string => {
     const q = query.toLowerCase().trim();
     const depts = (webData.depts && webData.depts.length > 0) ? webData.depts : DEFAULT_DEPTS;
 
     // 🎯 1. PRIORITY 1: DEPARTMENTS & HODS (About Page)
-    // Matches: "our departments", "department", "departments", "hod", "head", "faculty"
-    const isDeptQuery = q.includes('depart') || q.includes('dept') || q.includes('head') || q.includes('hod') || q.includes('faculty') || q.includes('staff') || q.includes('ramani') || q.includes('shwetha') || q.includes('manjunath') || q.includes('geetha');
-    if (isDeptQuery) {
-      // Individual department match
+    if (
+      q.includes('depart') || 
+      q.includes('dept') || 
+      q.includes('head') || 
+      q.includes('hod') || 
+      q.includes('faculty') || 
+      q.includes('staff') || 
+      q.includes('ramani') || 
+      q.includes('shwetha') || 
+      q.includes('manjunath') || 
+      q.includes('geetha')
+    ) {
       for (const d of depts) {
         const dName = (d.name || '').toLowerCase();
         const dHead = (d.head || '').toLowerCase();
-        
         if (
           (dHead && q.includes(dHead)) ||
           (q.includes('computer') && dName.includes('computer')) ||
@@ -293,13 +308,19 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
           return `🏛️ **${d.name} (About Page):**\n• **Head of Department (HOD):** ${d.head}\n• **Overview:** ${d.description || 'Offering modern lab education and experienced faculty.'}`;
         }
       }
-      // Return full list of departments from About.tsx
       return `🏛️ **Our Departments & Heads (From About Page):**\n\n${depts.map((d: any, idx: number) => `${idx + 1}. **${d.name}**\n   👤 Head: **${d.head}**\n   ${d.description || ''}`).join('\n\n')}`;
     }
 
-    // 🎯 2. PRIORITY 2: ADMISSION PROCESS & STEPS (Admission Page Steps 1 to 7)
-    const isProcessQuery = q.includes('process') || q.includes('steps') || q.includes('procedure') || q.includes('how to apply') || q.includes('how do i apply');
-    if (isProcessQuery || q === 'admission' || q === 'admissions') {
+    // 🎯 2. PRIORITY 2: ADMISSION PROCESS & STEPS (Admission Page Steps 1-7)
+    if (
+      q.includes('admi') || 
+      q.includes('apply') || 
+      q.includes('seat') || 
+      q.includes('process') || 
+      q.includes('steps') || 
+      q.includes('procedure') || 
+      q.includes('how to join')
+    ) {
       const processItems = webData.admission.filter(a => {
         const cat = (a.category || '').toLowerCase();
         const title = (a.title || '').toLowerCase();
@@ -313,8 +334,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     }
 
     // 🎯 3. PRIORITY 3: ELIGIBILITY CRITERIA ONLY
-    const isEligibilityQuery = q.includes('eligib') || q.includes('criteria') || q.includes('qualification');
-    if (isEligibilityQuery) {
+    if (q.includes('eligib') || q.includes('criteria') || q.includes('qualification')) {
       const eligItems = webData.admission.filter(a => (a.category || '').toLowerCase() === 'eligibility');
       if (eligItems.length > 0) {
         return `📋 **Eligibility Criteria (From Admission Page):**\n\n${eligItems.map(item => `• **${item.title}:**\n  ${item.content}`).join('\n\n')}`;
@@ -323,8 +343,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     }
 
     // 🎯 4. PRIORITY 4: FEE STRUCTURE ONLY
-    const isFeeQuery = q.includes('fee') || q.includes('cost') || q.includes('scholar') || q.includes('ssp') || q.includes('nsp') || q.includes('amount') || q.includes('payment');
-    if (isFeeQuery && !q.includes('bca') && !q.includes('bsc')) {
+    if (q.includes('fee') || q.includes('cost') || q.includes('scholar') || q.includes('ssp') || q.includes('nsp') || q.includes('amount') || q.includes('payment')) {
       const feeItems = webData.admission.filter(a => (a.category || '').toLowerCase() === 'fees');
       let feeReply = `💰 **Fee Structure (From Admission Portal):**\n\n`;
       if (feeItems.length > 0) {
@@ -334,12 +353,9 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       return feeReply;
     }
 
-    // 🎯 5. PRIORITY 5: SPECIFIC COURSES (Strict BCA vs BCA Data Science vs B.Sc)
+    // 🎯 5. PRIORITY 5: SPECIFIC BCA COURSES (Strict BCA vs Data Science)
     if (q.includes('data science') || q.includes('datascience') || q.includes('bca ds')) {
-      const bcaDs = webData.courses.find(c => {
-        const name = (c.name || '').toLowerCase();
-        return name.includes('data science') || name.includes('datascience');
-      });
+      const bcaDs = webData.courses.find(c => (c.name || '').toLowerCase().includes('data science') || (c.code || '').toLowerCase().includes('ds'));
       if (bcaDs) {
         return `📚 **${bcaDs.name} (${bcaDs.code || 'BCA-DS'}):**\n• **Duration:** ${bcaDs.duration || '3 Years (6 Semesters)'}\n• **Eligibility:** ${bcaDs.eligibility || '10+2 / PUC with Mathematics/Statistics'}\n• **Fees:** ${bcaDs.fees || 'Rs. 50,000 / Year'}\n• **Seats:** ${bcaDs.seats || '40 Seats'}\n• **Overview:** ${bcaDs.description || 'Specialized program covering Artificial Intelligence, Big Data, and Machine Learning.'}`;
       }
@@ -358,46 +374,45 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     }
 
     if (q.includes('bsc') || q.includes('b.sc')) {
-      const bsc = webData.courses.find(c => {
-        const name = (c.name || '').toLowerCase();
-        const code = (c.code || '').toLowerCase();
-        return code.includes('bsc') || name.includes('bachelor of science') || name.includes('b.sc');
-      });
+      const bsc = webData.courses.find(c => (c.code || '').toLowerCase().includes('bsc') || (c.name || '').toLowerCase().includes('science'));
       if (bsc) {
         return `📚 **${bsc.name} (${bsc.code || 'B.Sc'}):**\n• **Duration:** ${bsc.duration || '3 Years (6 Semesters)'}\n• **Eligibility:** ${bsc.eligibility || '10+2 / PUC Science Stream'}\n• **Fees:** ${bsc.fees || 'Rs. 18,000 / Year'}\n• **Seats:** ${bsc.seats || '120 Seats'}\n• **Overview:** ${bsc.description || 'Core physical and biological sciences with lab practicals.'}`;
       }
     }
 
-    // 🎯 6. PRIORITY 6: COURSES LIST
-    const isCourse = q.includes('cours') || q.includes('branch') || q.includes('program') || q.includes('degre');
-    if (isCourse) {
+    // 🎯 6. PRIORITY 6: ALL COURSES LIST
+    if (q.includes('cours') || q.includes('branch') || q.includes('program') || q.includes('degre')) {
       return `📚 **Offered Courses & Combinations (From Courses Page):**\n\n${webData.courses.map((c: any) => `• **${c.name}** (${c.duration || '3 Years'})\n  Eligibility: ${c.eligibility}\n  Fees: *${c.fees}* | Seats: ${c.seats}\n  ${c.description || ''}`).join('\n\n')}`;
     }
 
     // 🎯 7. PRIORITY 7: IMPORTANT DATES
-    const isDatesQuery = q.includes('date') || q.includes('schedule') || q.includes('deadline');
-    if (isDatesQuery) {
+    if (q.includes('date') || q.includes('schedule') || q.includes('deadline')) {
       const dateItems = webData.admission.filter(a => (a.category || '').toLowerCase() === 'important_dates');
       if (dateItems.length > 0) {
         return `📅 **Important Dates & Schedule (From Admission Page):**\n\n${dateItems.map(d => `• **${d.title}:**\n  ${d.content}`).join('\n\n')}`;
       }
     }
 
-    // 🎯 8. PRIORITY 8: CONTACT DETAILS
-    const isContact = q.includes('contact') || q.includes('phone') || q.includes('call') || q.includes('email') || q.includes('address') || q.includes('locat');
-    if (isContact) {
+    // 🎯 8. PRIORITY 8: FAQ FULL LIST / GENERAL FAQ INQUIRY
+    if (q.includes('faq') || q.includes('frequently asked') || q.includes('questions')) {
+      const faqsList = webData.faqs.length > 0 ? webData.faqs : DEFAULT_FAQS;
+      return `💡 **Frequently Asked Questions (FAQ):**\n\n${faqsList.map((f: any, idx: number) => `${idx + 1}. **Q: ${f.question}**\n   **A:** ${f.answer}`).join('\n\n')}`;
+    }
+
+    // 🎯 9. PRIORITY 9: CONTACT DETAILS
+    if (q.includes('contact') || q.includes('phone') || q.includes('call') || q.includes('email') || q.includes('address') || q.includes('locat')) {
       return `📍 **Campus Contact Details (From Contact Page):**\n• **Institution:** ${webData.settings.college_name}\n• **Address:** ${webData.settings.address}\n• **Phone:** 📞 **${webData.settings.phone || '0816-2203500'}**\n• **Email:** 📧 **${webData.settings.email}**\n• **Website:** 🌐 ${webData.settings.website}`;
     }
 
-    // 🎯 9. PRIORITY 9: FAQ EXACT QUESTION MATCH (Search in question ONLY)
+    // 🎯 10. SPECIFIC FAQ INDIVIDUAL QUESTION MATCH
     for (const f of webData.faqs) {
       const fQ = (f.question || '').toLowerCase();
-      if (q === fQ || (q.length > 8 && fQ.includes(q)) || (fQ.length > 8 && q.includes(fQ))) {
+      if (q === fQ || (q.length > 10 && fQ.includes(q)) || (fQ.length > 10 && q.includes(fQ))) {
         return `💡 **FAQ - ${f.question}:**\n\n${f.answer}`;
       }
     }
 
-    // 🎯 10. PRIORITY 10: TRAINED AI KNOWLEDGE BASE
+    // 🎯 11. TRAINED AI KNOWLEDGE BASE
     for (const kb of webData.knowledge) {
       const topic = (kb.topic || '').toLowerCase();
       if (q.includes(topic)) {
@@ -537,7 +552,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
             </div>
           </div>
 
-          {/* Transcript Feed */}
+          {/* Transcript Message Feed */}
           <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3 bg-white">
             {messages.map((msg) => (
               <div key={msg.id} className={`flex gap-2 w-full ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
