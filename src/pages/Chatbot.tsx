@@ -18,6 +18,8 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useCollegeSettings, useCourses } from '@/hooks/useCollegeData';
+import { Logo } from '@/components/Logo';
+import { AnnouncementBar } from '@/components/AnnouncementBar';
 import type { Route } from '@/types/route';
 
 interface Message {
@@ -38,39 +40,33 @@ interface ChatbotProps {
 }
 
 const DEFAULT_AI_KNOWLEDGE = [
-  { id: 'kn-1', topic: 'NSS & Activities', content: '**UCS Tumkur** has active **NSS** and *Youth Red Cross* wings encouraging students to participate in community service, tree plantation, and annual special blood donation camps.' },
-  { id: 'kn-2', topic: 'Courses Offered', content: 'We offer premier programs:\n• **BCA** (Bachelor of Computer Applications)\n• **B.Sc** (PMCs, CBZ, Electronics, Biotechnology)\n• **M.Sc** programs with top-tier faculty and lab facilities.' },
-  { id: 'kn-3', topic: 'Fees & Scholarships', content: 'Tuition fees follow **Karnataka state government norms** (Approx *Rs. 25,000/year* for BCA). Post-matric SSP, NSP scholarships and category fee concessions are available.' },
-  { id: 'kn-4', topic: 'Hostel Facilities', content: '**UCS Tumkur** provides secure hostel accommodation with hygienic mess facilities, 24/7 security, and study halls for both boys and girls near the campus.' },
-  { id: 'kn-5', topic: 'College Helpdesk & Contact', content: '📍 **Address:** BH Road, Tumkur - 572103\n📞 **Phone:** 0816-2203500\n📧 **Email:** ucscience@tumkuruniversity.ac.in\n🌐 **Official Website:** https://tumkuruniversity.ac.in' },
-  { id: 'kn-6', topic: 'Sports & Gymnasium', content: '**UCS Tumkur** features dedicated sports facilities including cricket, volleyball, kabaddi grounds, indoor badminton, table tennis, and a modern student gym.' }
+  { id: 'kn-1', topic: 'Admission Process', content: '🎓 **Admission Process:**\n1. Applications are open online and at the college admission desk.\n2. Submit 10th & 12th/PUC marks cards along with required category certificates.\n3. Merit list is announced, followed by document verification & fee payment.\nFor admission assistance, call: **0816-2203500**' },
+  { id: 'kn-2', topic: 'Courses Offered', content: 'We offer premier programs:\n• **BCA** (Bachelor of Computer Applications)\n• **B.Sc** (PMCs, CBZ, Electronics, Biotechnology)\n• **M.Sc** programs with state-of-the-art laboratory facilities.' },
+  { id: 'kn-3', topic: 'Fees & Scholarships', content: 'Tuition fees follow **Karnataka government norms** (Approx *Rs. 25,000/year* for BCA). Post-matric SSP, NSP scholarships and category fee concessions are applicable for eligible students.' },
+  { id: 'kn-4', topic: 'Hostel Facilities', content: '**UCS Tumkur** provides secure hostel accommodation with hygienic mess facilities, 24/7 security, and dedicated study halls for both boys and girls.' },
+  { id: 'kn-5', topic: 'College Helpdesk & Contact', content: '📍 **Address:** BH Road, Tumkur - 572103\n📞 **Phone:** 0816-2203500\n📧 **Email:** ucscience@tumkuruniversity.ac.in\n🌐 **Website:** https://tumkuruniversity.ac.in' },
+  { id: 'kn-6', topic: 'NSS & Sports', content: '**UCS Tumkur** has active **NSS**, **Youth Red Cross**, and sports facilities for cricket, volleyball, badminton, and a modern student gym.' }
 ];
 
 const DEFAULT_PROMPTS: QuickPrompt[] = [
-  { id: '1', label: 'Available Courses', prompt: 'What courses are offered?' },
-  { id: '2', label: 'Hostel & Campus', prompt: 'Tell me about hostel and facilities' },
-  { id: '3', label: 'Admission Process', prompt: 'How do I apply for BCA / B.Sc admissions?' },
+  { id: '1', label: 'Admission Process', prompt: 'Tell me about admission process' },
+  { id: '2', label: 'Available Courses', prompt: 'What courses are offered?' },
+  { id: '3', label: 'Hostel & Campus', prompt: 'Tell me about hostel and facilities' },
   { id: '4', label: 'Contact Helpdesk', prompt: 'How to contact college office?' },
 ];
 
 const KNOWLEDGE_KEY = 'ucs_admin_knowledge';
 
-// 🌟 Ultra-Clean Robust Parser for Bold, Italic & Clickable Hyperlinks 🌟
+// 🌟 Robust Parser for Bold, Italic & Clickable Hyperlinks 🌟
 function FormattedText({ text }: { text: string }) {
   const parseContent = (input: string) => {
-    // 1. Convert Clickable URL Links
     let parsed = input.replace(
       /(https?:\/\/[^\s]+)/g,
       '<a href="$1" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-bold underline bg-blue-50 px-2 py-0.5 rounded-md hover:bg-blue-100 transition-colors break-all">$1 ↗</a>'
     );
-
-    // 2. Bold tags (**word**)
     parsed = parsed.replace(/\*\*(.+?)\*\*/g, '<strong class="font-extrabold text-slate-900">$1</strong>');
-
-    // 3. Italic tags (*word* or _word_)
     parsed = parsed.replace(/\*([^\*]+?)\*/g, '<em class="italic text-slate-800 font-medium">$1</em>');
     parsed = parsed.replace(/_([^_]+?)_/g, '<em class="italic text-slate-800 font-medium">$1</em>');
-
     return parsed;
   };
 
@@ -239,9 +235,13 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     } catch {}
   };
 
+  // 🌟 Smart Fuzzy Keyword Matcher 🌟
   const generateBotReplyAsync = async (query: string): Promise<string> => {
-    const q = query.toLowerCase().trim();
-    const cleanWords = q.replace(/[^a-zA-Z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 1);
+    const rawQ = query.toLowerCase().trim();
+    const cleanTokens = rawQ
+      .replace(/[^a-zA-Z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter((w) => w.length >= 2);
 
     let freshKnowledge: any[] = [];
     try {
@@ -272,20 +272,17 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       const content = (item.content || '').toLowerCase();
       let score = 0;
 
-      if (q === topic) {
-        score += 30;
-      } else if (q.includes(topic) || topic.includes(q)) {
-        score += 20;
-      }
+      // Exact phrase match
+      if (rawQ === topic) score += 100;
+      if (rawQ.includes(topic) || topic.includes(rawQ)) score += 50;
 
-      const topicTokens = topic.replace(/[^a-zA-Z0-9\s]/g, '').split(/\s+/).filter(t => t.length > 1);
-      for (const t of topicTokens) {
-        if (q.includes(t)) score += 10;
-        if (cleanWords.some(w => w === t)) score += 8;
-      }
+      const topicTokens = topic.replace(/[^a-zA-Z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length >= 2);
 
-      for (const word of cleanWords) {
-        if (content.includes(word)) score += 1;
+      // Token overlap
+      for (const token of cleanTokens) {
+        if (topicTokens.includes(token)) score += 25;
+        if (topic.includes(token)) score += 15;
+        if (content.includes(token)) score += 5;
       }
 
       if (score > 0 && (!bestMatch || score > bestMatch.score)) {
@@ -293,21 +290,28 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       }
     }
 
-    if (bestMatch && bestMatch.score >= 3) {
+    // High confidence threshold (even 1-2 keywords matched)
+    if (bestMatch && bestMatch.score >= 5) {
       return bestMatch.content;
     }
 
-    if (['hi', 'hello', 'hey', 'namaste'].some(g => q.startsWith(g))) {
-      return `Hello! 👋 How can I assist you with **admissions, courses, fees, hostels, or campus details** today?`;
+    // Direct fallbacks for common queries
+    if (cleanTokens.some(k => ['admission', 'apply', 'join', 'seat', 'application'].includes(k))) {
+      const adm = knowledgeSource.find(k => k.topic?.toLowerCase().includes('admission'));
+      if (adm) return adm.content;
     }
 
-    if (q.includes('course') || q.includes('bca') || q.includes('bsc')) {
+    if (cleanTokens.some(k => ['course', 'branch', 'bca', 'bsc', 'msc'].includes(k))) {
       if (courses && courses.length > 0) {
-        return `We offer premier programs:\n\n${courses.map((c: any) => `• **${c.name}** (${c.duration || '3 Years'}) - Fees: *${c.fees || 'As per norms'}*`).join('\n')}\n\nCheck the **Courses** page for more detailed information.`;
+        return `We offer premier programs:\n\n${courses.map((c: any) => `• **${c.name}** (${c.duration || '3 Years'}) - Fees: *${c.fees || 'As per norms'}*`).join('\n')}\n\nCheck the **Courses** page for more details.`;
       }
     }
 
-    return `Thank you for your question! For specific queries regarding "${query}", please contact the college helpdesk directly at **${settings?.phone || '0816-2203500'}** or visit the official website: https://tumkuruniversity.ac.in`;
+    if (['hi', 'hello', 'hey', 'namaste', 'start'].some(g => rawQ.startsWith(g))) {
+      return `Hello! 👋 How can I assist you with **admissions, courses, fees, hostels, or campus details** today?`;
+    }
+
+    return `Thank you for your question! For details regarding "${query}", please contact the college helpdesk directly at **${settings?.phone || '0816-2203500'}** or visit https://tumkuruniversity.ac.in`;
   };
 
   const handleSend = async (e?: React.FormEvent, customText?: string) => {
@@ -389,18 +393,181 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
   const getPromptIcon = (index: number) => {
     const icons = [BookOpen, School, FileText, PhoneCall];
     const IconComp = icons[index % icons.length];
-    return <IconComp size={14} className="text-primary-600 shrink-0" />;
+    return <IconComp size={14} className="text-blue-600 shrink-0" />;
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 py-2 flex flex-col h-[calc(100vh-130px)] min-h-[580px]">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-amber-50/70 via-teal-50/50 to-indigo-50/70 font-sans text-slate-800">
       
+      {/* 🌟 Header Section 🌟 */}
+      <header className="bg-gradient-to-r from-teal-700 via-emerald-600 to-teal-800 text-white py-4 px-4 shadow-md text-center shrink-0">
+        <div className="max-w-5xl mx-auto flex flex-col items-center gap-1.5">
+          <div className="p-1.5 bg-white/20 backdrop-blur-md rounded-2xl border border-white/30">
+            <Logo logoUrl={settings?.logo_url} size="md" />
+          </div>
+          <h1 className="text-lg md:text-2xl font-bold">{settings?.college_name ?? 'University College Of Science, Tumkur'}</h1>
+          <p className="text-xs text-teal-100">{settings?.address ?? 'Tumkur University Campus, BH Road, Tumkur - 572103'}</p>
+          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white/15 text-xs text-amber-300">
+            <Sparkles size={13} />
+            <span className="text-white font-semibold">AI Admission & Campus Enquiry Assistant</span>
+          </div>
+        </div>
+      </header>
+
+      <AnnouncementBar />
+
+      {/* 🌟 Main Chat Area - Expanded to Fill Entire Page Height 🌟 */}
+      <main className="flex-1 flex flex-col w-full max-w-6xl mx-auto p-2 sm:p-4 min-h-0">
+        
+        <div className="flex-1 bg-white/95 backdrop-blur-xl rounded-3xl border border-teal-100 shadow-xl flex flex-col overflow-hidden w-full h-full min-h-[620px]">
+          
+          {/* Top Bar inside Chatbox */}
+          <div className="bg-slate-50/90 px-4 md:px-6 py-3 border-b border-slate-200/80 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md">
+                <Bot size={20} />
+              </div>
+              <div>
+                <h2 className="text-sm md:text-base font-black text-slate-800 flex items-center gap-1.5">
+                  <span>UCS AI Assistant</span>
+                  <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full">v2.4</span>
+                </h2>
+                <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>Cloud Live Connected</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {isAdminState && onNavigate && (
+                <button
+                  type="button"
+                  onClick={() => onNavigate('admin-dashboard')}
+                  className="px-3.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <ShieldCheck size={15} />
+                  <span>Admin Panel</span>
+                </button>
+              )}
+              <button 
+                onClick={() => setMessages([messages[0]])} 
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl cursor-pointer transition-colors"
+                title="Reset Conversation"
+              >
+                <RefreshCw size={17} />
+              </button>
+            </div>
+          </div>
+
+          {/* 🌟 Transcript Stream - Full Width with Complete Text Visibility 🌟 */}
+          <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-4 bg-white/60">
+            {messages.map((msg) => (
+              <div key={msg.id} className={`flex gap-3 w-full ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                
+                {msg.sender === 'bot' && (
+                  <div className="h-9 w-9 rounded-xl bg-teal-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-1">
+                    <Bot size={18} />
+                  </div>
+                )}
+
+                <div className={`space-y-1 ${msg.sender === 'user' ? 'max-w-[85%] md:max-w-[70%]' : 'max-w-[96%] md:max-w-[90%]'}`}>
+                  <div className={`p-4 md:p-5 rounded-2xl shadow-xs ${msg.sender === 'user' ? 'bg-blue-600 text-white rounded-tr-none font-medium' : 'bg-slate-50 text-slate-800 border border-slate-200/90 rounded-tl-none'}`}>
+                    {msg.sender === 'user' ? (
+                      <p className="leading-relaxed text-sm md:text-base">{msg.text}</p>
+                    ) : (
+                      <FormattedText text={msg.text} />
+                    )}
+                  </div>
+                  <p className={`text-[11px] text-slate-400 px-1 font-semibold ${msg.sender === 'user' ? 'text-right' : 'text-left'}`}>{msg.timestamp}</p>
+                </div>
+
+                {msg.sender === 'user' && (
+                  <div className="h-9 w-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-1">
+                    <User size={18} />
+                  </div>
+                )}
+
+              </div>
+            ))}
+
+            {isTyping && (
+              <div className="flex gap-3 justify-start items-center">
+                <div className="h-9 w-9 rounded-xl bg-teal-600 text-white flex items-center justify-center"><Bot size={18} /></div>
+                <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-2xl rounded-tl-none flex items-center gap-1.5">
+                  <span className="h-2 w-2 bg-teal-600 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                  <span className="h-2 w-2 bg-teal-600 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                  <span className="h-2 w-2 bg-teal-600 rounded-full animate-bounce" />
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Quick Prompts Bar */}
+          <div className="px-4 py-2 bg-slate-50/80 border-t border-slate-100 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0">
+            <span className="text-xs font-bold text-slate-400 uppercase shrink-0 flex items-center gap-1">
+              <Sparkles size={14} className="text-amber-500" />
+              <span>Ask:</span>
+            </span>
+
+            {quickPrompts.map((p, idx) => (
+              <div key={p.id || idx} className="inline-flex items-center gap-1 shrink-0">
+                <button 
+                  type="button" 
+                  onClick={() => handleSend(undefined, p.prompt)} 
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-700 border border-slate-200 rounded-xl text-xs md:text-sm font-bold cursor-pointer transition-colors shadow-2xs"
+                >
+                  {getPromptIcon(idx)}
+                  <span>{p.label}</span>
+                </button>
+
+                {isAdminState && (
+                  <div className="flex items-center bg-white border border-slate-200 rounded-lg p-0.5">
+                    <button type="button" onClick={(e) => handleOpenEditModal(p, e)} className="p-1 text-slate-400 hover:text-blue-600 cursor-pointer"><Edit2 size={11} /></button>
+                    <button type="button" onClick={(e) => handleDeletePrompt(p.id, e)} className="p-1 text-slate-400 hover:text-rose-600 cursor-pointer"><Trash2 size={11} /></button>
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {isAdminState && (
+              <button type="button" onClick={handleOpenAddModal} className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shrink-0 cursor-pointer shadow-xs">
+                <Plus size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* Input Chat Box */}
+          <div className="p-3 md:p-4 bg-white border-t border-slate-100 shrink-0">
+            <form onSubmit={(e) => handleSend(e)} className="flex items-center gap-2">
+              <input 
+                type="text" 
+                value={input} 
+                onChange={(e) => setInput(e.target.value)} 
+                placeholder="Ask about admissions, courses, fees, hostel, NSS, sports..." 
+                className="flex-1 px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-600 focus:bg-white text-sm md:text-base font-medium outline-none transition-all" 
+              />
+              <button 
+                type="submit" 
+                disabled={!input.trim()} 
+                className="h-11 w-11 md:h-12 md:w-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-md disabled:opacity-50 cursor-pointer shrink-0 transition-all"
+              >
+                <Send size={18} />
+              </button>
+            </form>
+          </div>
+
+        </div>
+      </main>
+
+      {/* Modal for Prompt management */}
       {isPromptModalOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200">
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
               <h3 className="font-extrabold text-base text-slate-800 flex items-center gap-2">
-                <Sparkles size={18} className="text-primary-600" />
+                <Sparkles size={18} className="text-blue-600" />
                 <span>{editingPromptId ? 'Edit Quick Prompt' : 'Add Quick Prompt'}</span>
               </h3>
               <button onClick={() => setIsPromptModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer"><X size={20} /></button>
@@ -408,162 +575,20 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
             <form onSubmit={handleSavePrompt} className="space-y-3.5 text-sm">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Button Title</label>
-                <input type="text" required value={promptLabel} onChange={e => setPromptLabel(e.target.value)} placeholder="e.g. Sports" className="w-full p-2.5 bg-slate-50 border rounded-xl outline-none focus:border-primary-600 font-medium" />
+                <input type="text" required value={promptLabel} onChange={e => setPromptLabel(e.target.value)} placeholder="e.g. Sports" className="w-full p-2.5 bg-slate-50 border rounded-xl outline-none focus:border-blue-600 font-medium" />
               </div>
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Prompt Question</label>
-                <textarea required rows={2} value={promptText} onChange={e => setPromptText(e.target.value)} placeholder="Tell me about Sports" className="w-full p-2.5 bg-slate-50 border rounded-xl outline-none focus:border-primary-600 resize-none font-medium" />
+                <textarea required rows={2} value={promptText} onChange={e => setPromptText(e.target.value)} placeholder="Tell me about Sports" className="w-full p-2.5 bg-slate-50 border rounded-xl outline-none focus:border-blue-600 resize-none font-medium" />
               </div>
               <div className="flex gap-2 pt-1">
                 <button type="button" onClick={() => setIsPromptModalOpen(false)} className="flex-1 py-2.5 bg-slate-100 text-slate-600 font-bold rounded-xl cursor-pointer">Cancel</button>
-                <button type="submit" className="flex-1 py-2.5 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 cursor-pointer shadow-sm">Save</button>
+                <button type="submit" className="flex-1 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 cursor-pointer shadow-sm">Save</button>
               </div>
             </form>
           </div>
         </div>
       )}
-
-      {/* 🌟 Full Screen Height & Full Width Chat Container 🌟 */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col overflow-hidden flex-1 w-full">
-        
-        {/* Compact Header Bar */}
-        <div className="bg-gray-50/90 px-4 md:px-6 py-3 border-b border-gray-200/80 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-md">
-              <Bot size={20} />
-            </div>
-            <div>
-              <h2 className="text-sm md:text-base font-black text-slate-800 flex items-center gap-1.5 leading-tight">
-                <span>UCS AI Assistant</span>
-                <span className="text-[10px] bg-primary-100 text-primary-700 font-bold px-2 py-0.5 rounded-full">v2.4</span>
-              </h2>
-              <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Cloud Live Connected</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {isAdminState && onNavigate && (
-              <button
-                type="button"
-                onClick={() => onNavigate('admin-dashboard')}
-                className="px-3.5 py-1.5 bg-primary-50 hover:bg-primary-100 text-primary-700 border border-primary-200 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
-              >
-                <ShieldCheck size={15} />
-                <span>Admin Panel</span>
-              </button>
-            )}
-            <button 
-              onClick={() => setMessages([messages[0]])} 
-              className="p-2 text-slate-400 hover:text-slate-600 hover:bg-gray-100 rounded-xl cursor-pointer transition-colors"
-              title="Reset Conversation"
-            >
-              <RefreshCw size={17} />
-            </button>
-          </div>
-        </div>
-
-        {/* 🌟 Chat Transcripts - Expands across full width and height with zero clipping 🌟 */}
-        <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-4 bg-white">
-          {messages.map((msg) => (
-            <div key={msg.id} className={`flex gap-3 w-full ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-              
-              {msg.sender === 'bot' && (
-                <div className="h-9 w-9 rounded-xl bg-teal-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-1">
-                  <Bot size={18} />
-                </div>
-              )}
-
-              <div className={`space-y-1 ${msg.sender === 'user' ? 'max-w-[85%] md:max-w-[70%]' : 'max-w-[95%] md:max-w-[88%]'}`}>
-                <div className={`p-4 md:p-5 rounded-2xl shadow-xs ${msg.sender === 'user' ? 'bg-primary-600 text-white rounded-tr-none font-medium' : 'bg-gray-50/90 text-slate-800 border border-gray-200/80 rounded-tl-none'}`}>
-                  {msg.sender === 'user' ? (
-                    <p className="leading-relaxed text-sm md:text-base">{msg.text}</p>
-                  ) : (
-                    <FormattedText text={msg.text} />
-                  )}
-                </div>
-                <p className={`text-[11px] text-slate-400 px-1 font-semibold ${msg.sender === 'user' ? 'text-right' : 'text-left'}`}>{msg.timestamp}</p>
-              </div>
-
-              {msg.sender === 'user' && (
-                <div className="h-9 w-9 rounded-xl bg-primary-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-1">
-                  <User size={18} />
-                </div>
-              )}
-
-            </div>
-          ))}
-
-          {isTyping && (
-            <div className="flex gap-3 justify-start items-center">
-              <div className="h-9 w-9 rounded-xl bg-teal-600 text-white flex items-center justify-center"><Bot size={18} /></div>
-              <div className="bg-gray-50 border border-gray-200 p-3.5 rounded-2xl rounded-tl-none flex items-center gap-1.5">
-                <span className="h-2 w-2 bg-teal-600 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                <span className="h-2 w-2 bg-teal-600 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                <span className="h-2 w-2 bg-teal-600 rounded-full animate-bounce" />
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Quick Prompts Bar */}
-        <div className="px-4 py-2 bg-gray-50/80 border-t border-gray-100 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0">
-          <span className="text-xs font-bold text-slate-400 uppercase shrink-0 flex items-center gap-1">
-            <Sparkles size={14} className="text-amber-500" />
-            <span>Ask:</span>
-          </span>
-
-          {quickPrompts.map((p, idx) => (
-            <div key={p.id || idx} className="inline-flex items-center gap-1 shrink-0">
-              <button 
-                type="button" 
-                onClick={() => handleSend(undefined, p.prompt)} 
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-primary-50 hover:text-primary-700 text-slate-700 border border-gray-200 rounded-xl text-xs md:text-sm font-bold cursor-pointer transition-colors shadow-2xs"
-              >
-                {getPromptIcon(idx)}
-                <span>{p.label}</span>
-              </button>
-
-              {isAdminState && (
-                <div className="flex items-center bg-white border border-gray-200 rounded-lg p-0.5">
-                  <button type="button" onClick={(e) => handleOpenEditModal(p, e)} className="p-1 text-slate-400 hover:text-primary-600 cursor-pointer"><Edit2 size={11} /></button>
-                  <button type="button" onClick={(e) => handleDeletePrompt(p.id, e)} className="p-1 text-slate-400 hover:text-rose-600 cursor-pointer"><Trash2 size={11} /></button>
-                </div>
-              )}
-            </div>
-          ))}
-
-          {isAdminState && (
-            <button type="button" onClick={handleOpenAddModal} className="px-2.5 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold shrink-0 cursor-pointer shadow-xs">
-              <Plus size={14} />
-            </button>
-          )}
-        </div>
-
-        {/* Input Chat Box */}
-        <div className="p-3 md:p-4 bg-white border-t border-gray-100 shrink-0">
-          <form onSubmit={(e) => handleSend(e)} className="flex items-center gap-2">
-            <input 
-              type="text" 
-              value={input} 
-              onChange={(e) => setInput(e.target.value)} 
-              placeholder="Ask about admissions, courses, fees, hostel, NSS, sports..." 
-              className="flex-1 px-4 py-3 bg-gray-50 rounded-xl border border-gray-200 focus:border-primary-600 focus:bg-white text-sm md:text-base font-medium outline-none transition-all" 
-            />
-            <button 
-              type="submit" 
-              disabled={!input.trim()} 
-              className="h-11 w-11 md:h-12 md:w-12 rounded-xl bg-primary-600 hover:bg-primary-700 text-white flex items-center justify-center shadow-md disabled:opacity-50 cursor-pointer shrink-0 transition-all"
-            >
-              <Send size={18} />
-            </button>
-          </form>
-        </div>
-
-      </div>
     </div>
   );
 }
