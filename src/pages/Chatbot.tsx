@@ -36,7 +36,7 @@ interface ChatbotProps {
   onNavigate?: (route: Route) => void;
 }
 
-// 🌟 Local Storage Keys matched exactly with your Pages 🌟
+// 🌟 Exact Local Storage Keys from About.tsx, Courses.tsx, Admission.tsx, FAQ.tsx, Contact.tsx 🌟
 const STORAGE_KEYS = {
   DEPTS: 'ucs_crud_departments',
   COURSES: 'ucs_courses_data',
@@ -73,11 +73,9 @@ const DEFAULT_ADMISSION = [
 const DEFAULT_PROMPTS: QuickPrompt[] = [
   { id: '1', label: 'Admission Process', prompt: 'Tell me about admission process' },
   { id: '2', label: 'BCA Course Details', prompt: 'Tell me about BCA course' },
-  { id: '3', label: 'Department Heads', prompt: 'Show all departments and HODs' },
+  { id: '3', label: 'Our Departments', prompt: 'Show our departments and HODs' },
   { id: '4', label: 'Fee Structure', prompt: 'What is the fee structure?' },
 ];
-
-const STOP_WORDS = new Set(['how', 'what', 'when', 'where', 'which', 'who', 'why', 'can', 'the', 'and', 'for', 'are', 'is', 'tell', 'give', 'many', 'much', 'about', 'show', 'list', 'please', 'college', 'ucs', 'tumkur', 'all', 'any', 'get', 'details', 'info', 'information']);
 
 function FormattedText({ text }: { text: string }) {
   const parseContent = (input: string) => {
@@ -129,7 +127,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     {
       id: 'welcome',
       sender: 'bot',
-      text: `Hello! 👋 Welcome to **University College of Science, Tumkur**.\nI am your **AI Campus Assistant**.\nAsk me anything regarding **Admissions, Courses, HODs, Fees, Eligibility, or Contact details**!`,
+      text: `Hello! 👋 Welcome to **University College of Science, Tumkur**.\nI am your **AI Campus Assistant**.\nAsk me anything regarding **Admissions, Courses, Departments/HODs, Fees, Eligibility, or Contact details**!`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
     },
   ]);
@@ -272,16 +270,12 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     } catch {}
   };
 
-  // 🧠 Universal Multi-Page Intent Engine 🧠
+  // 🧠 Absolute Multi-Page Intent Engine with Strict Priority 🧠
   const parseAndAnswer = (query: string): string => {
     const q = query.toLowerCase().trim();
-    const rawTokens = q.replace(/[^a-zA-Z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length >= 2);
-    const meaningfulTokens = rawTokens.filter(t => !STOP_WORDS.has(t));
-
-    // Active Departments Array with Fallback Guarantee
     const depts = (webData.depts && webData.depts.length > 0) ? webData.depts : DEFAULT_DEPTS;
 
-    // 🎯 1. CHECK DEPARTMENTS & HODs (Matches "departments", "dept", "hod", "head", "faculty", "staff", "prof")
+    // 🎯 1. CHECK DEPARTMENTS & HODs FIRST (Priority 1: "departments", "our departments", "hod", "head", "faculty")
     const isDeptQuery = q.includes('depart') || q.includes('dept') || q.includes('head') || q.includes('hod') || q.includes('faculty') || q.includes('staff') || q.includes('professor') || q.includes('ramani') || q.includes('shwetha') || q.includes('manjunath') || q.includes('geetha');
     if (isDeptQuery) {
       // Individual department search
@@ -299,11 +293,11 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
           return `🏛️ **${d.name} (About Page):**\n• **Head of Department (HOD):** ${d.head}\n• **Overview:** ${d.description || 'Offering advanced lab education and experienced faculty.'}`;
         }
       }
-      // Return full list of departments & HODs
+      // Return all departments from About.tsx
       return `🏛️ **Academic Departments at UCS Tumkur (Total: ${depts.length}):**\n\n${depts.map((d: any, idx: number) => `${idx + 1}. **${d.name}**\n   👤 Head: **${d.head}**\n   ${d.description || ''}`).join('\n\n')}`;
     }
 
-    // 🎯 2. CHECK ADMISSION PROCESS ONLY (Steps 1 to 7 in Order)
+    // 🎯 2. CHECK ADMISSION PROCESS (Priority 2: Steps 1 to 7)
     const isProcessQuery = q.includes('process') || q.includes('steps') || q.includes('procedure') || q.includes('how to apply') || q.includes('how do i apply');
     if (isProcessQuery || q === 'admission' || q === 'admissions') {
       const processItems = webData.admission.filter(a => {
@@ -377,7 +371,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     }
 
     // 🎯 6. ALL COURSES LIST
-    const isCourse = q.includes('cours') || q.includes('branch') || q.includes('program') || q.includes('degre');
+    const isCourse = q.includes('cours') || q.includes('branch') || q.includes('program') || q.includes('degre') || q.includes('combinations');
     if (isCourse) {
       return `📚 **Offered Courses & Combinations (From Courses Page):**\n\n${webData.courses.map((c: any) => `• **${c.name}** (${c.duration || '3 Years'})\n  Eligibility: ${c.eligibility}\n  Fees: *${c.fees}* | Seats: ${c.seats}\n  ${c.description || ''}`).join('\n\n')}`;
     }
@@ -392,18 +386,15 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     }
 
     // 🎯 8. CONTACT & CAMPUS DETAILS
-    const isContact = q.includes('contact') || q.includes('phone') || q.includes('call') || q.includes('email') || q.includes('address') || q.includes('locat') || q.includes('help');
+    const isContact = q.includes('contact') || q.includes('phone') || q.includes('call') || q.includes('email') || q.includes('address') || q.includes('locat') || q.includes('help') || q.includes('website');
     if (isContact) {
       return `📍 **Campus Contact Details (From Contact Page):**\n• **Institution:** ${webData.settings.college_name}\n• **Address:** ${webData.settings.address}\n• **Phone:** 📞 **${webData.settings.phone || '0816-2203500'}**\n• **Email:** 📧 **${webData.settings.email}**\n• **Website:** 🌐 ${webData.settings.website}`;
     }
 
-    // 🎯 9. STRICT FAQ MATCHING
+    // 🎯 9. STRICT FAQ MATCHING (Exact question check)
     for (const f of webData.faqs) {
       const fQ = (f.question || '').toLowerCase();
-      const fQTokens = fQ.replace(/[^a-zA-Z0-9\s]/g, ' ').split(/\s+/).filter(w => !STOP_WORDS.has(w) && w.length >= 3);
-      const matches = meaningfulTokens.filter(t => fQTokens.some(fqT => fqT.includes(t) || t.includes(fqT)));
-
-      if (matches.length >= 2 || q.includes(fQ) || fQ.includes(q)) {
+      if (q === fQ || q.includes(fQ) || fQ.includes(q)) {
         return `💡 **FAQ - ${f.question}:**\n\n${f.answer}`;
       }
     }
@@ -412,7 +403,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     for (const kb of webData.knowledge) {
       const topic = (kb.topic || '').toLowerCase();
       const content = (kb.content || '').toLowerCase();
-      if (q.includes(topic) || (meaningfulTokens.length > 0 && meaningfulTokens.every(t => topic.includes(t) || content.includes(t)))) {
+      if (q.includes(topic)) {
         return kb.content;
       }
     }
@@ -422,7 +413,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       return `Hello! 👋 Welcome to **University College of Science, Tumkur**.\nHow can I help you regarding **Admissions, Courses, Department HODs, Fees, Hostels, or Contact details**?`;
     }
 
-    return `🏛️ **UCS Tumkur Campus Helpdesk:**\nWe offer **BCA, B.Sc, and M.Sc** programs across 4 departments.\nFor specific queries, please contact the office at 📞 **${webData.settings.phone || '0816-2203500'}** or visit ${webData.settings.website || 'https://tumkuruniversity.ac.in'}`;
+    return `🏛️ **UCS Tumkur Campus Helpdesk:**\n• We offer **BCA, B.Sc, and M.Sc** programs across 4 departments.\n• For specific inquiries, contact the helpdesk at 📞 **${webData.settings.phone || '0816-2203500'}** or visit https://tumkuruniversity.ac.in`;
   };
 
   const handleSend = (e?: React.FormEvent, customText?: string) => {
@@ -523,7 +514,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
                 <h2 className="text-xs sm:text-sm font-black text-slate-800 leading-tight">UCS AI Assistant</h2>
                 <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-semibold">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Online (Connected to All Pages)</span>
+                  <span>Online (Synchronized with All Pages)</span>
                 </div>
               </div>
             </div>
@@ -619,7 +610,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
             )}
           </div>
 
-          {/* Fixed Input Box */}
+          {/* Fixed Bottom Input Box */}
           <div className="p-2.5 sm:p-3 bg-white border-t border-slate-100 shrink-0">
             <form onSubmit={(e) => handleSend(e)} className="flex items-center gap-2">
               <input 
