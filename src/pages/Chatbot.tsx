@@ -36,7 +36,6 @@ interface ChatbotProps {
   onNavigate?: (route: Route) => void;
 }
 
-// 🌟 Local Storage Keys from Pages 🌟
 const STORAGE_KEYS = {
   DEPTS: 'ucs_crud_departments',
   COURSES: 'ucs_courses_data',
@@ -73,8 +72,7 @@ const DEFAULT_ADMISSION = [
 const DEFAULT_FAQS = [
   { question: 'How do I apply for BCA admission in UCS Tumkur?', answer: 'You can apply online through this admission portal or visit the college admission desk with original marks cards.' },
   { question: 'What are the college working and library hours?', answer: 'Regular theory and practical classes run from 9:30 AM to 4:30 PM. The library remains open until 5:30 PM.' },
-  { question: 'Are hostel facilities available for outstation students?', answer: 'Yes, separate hostel facilities with mess services are provided for both boys and girls near campus.' },
-  { question: 'What scholarships are available for students?', answer: 'State Government SSP & NSP post-matric scholarships, fee concessions, and merit scholarships are available for eligible SC, ST, OBC, and minority students.' }
+  { question: 'Are hostel facilities available for outstation students?', answer: 'Yes, separate hostel facilities with mess services are provided for both boys and girls near campus.' }
 ];
 
 const DEFAULT_PROMPTS: QuickPrompt[] = [
@@ -277,24 +275,27 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     } catch {}
   };
 
-  // 🧠 Absolute Direct Router 🧠
+  // 🧠 Intent-Based Routing (Top-to-Bottom, Anti-Collision Logic) 🧠
   const parseAndAnswer = (query: string): string => {
     const q = query.toLowerCase().trim();
     const depts = (webData.depts && webData.depts.length > 0) ? webData.depts : DEFAULT_DEPTS;
 
     // 🎯 1. PRIORITY 1: DEPARTMENTS & HODS (About Page)
-    if (
+    // Matches exact phrases: "our departments", "department", "departments", "hod", "head of department"
+    const isDeptIntent = 
+      q.includes('department') || 
       q.includes('depart') || 
       q.includes('dept') || 
-      q.includes('head') || 
       q.includes('hod') || 
+      q.includes('head') || 
       q.includes('faculty') || 
       q.includes('staff') || 
       q.includes('ramani') || 
       q.includes('shwetha') || 
       q.includes('manjunath') || 
-      q.includes('geetha')
-    ) {
+      q.includes('geetha');
+
+    if (isDeptIntent) {
       for (const d of depts) {
         const dName = (d.name || '').toLowerCase();
         const dHead = (d.head || '').toLowerCase();
@@ -311,16 +312,17 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       return `🏛️ **Our Departments & Heads (From About Page):**\n\n${depts.map((d: any, idx: number) => `${idx + 1}. **${d.name}**\n   👤 Head: **${d.head}**\n   ${d.description || ''}`).join('\n\n')}`;
     }
 
-    // 🎯 2. PRIORITY 2: ADMISSION PROCESS & STEPS (Admission Page Steps 1-7)
-    if (
+    // 🎯 2. PRIORITY 2: ADMISSION STEPS & PROCESS (Admission Page Steps 1 to 7)
+    const isAdmissionIntent = 
       q.includes('admi') || 
       q.includes('apply') || 
       q.includes('seat') || 
       q.includes('process') || 
       q.includes('steps') || 
-      q.includes('procedure') || 
-      q.includes('how to join')
-    ) {
+      q.includes('counselling') || 
+      q.includes('procedure');
+
+    if (isAdmissionIntent) {
       const processItems = webData.admission.filter(a => {
         const cat = (a.category || '').toLowerCase();
         const title = (a.title || '').toLowerCase();
@@ -333,7 +335,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       }
     }
 
-    // 🎯 3. PRIORITY 3: ELIGIBILITY CRITERIA ONLY
+    // 🎯 3. PRIORITY 3: ELIGIBILITY CRITERIA
     if (q.includes('eligib') || q.includes('criteria') || q.includes('qualification')) {
       const eligItems = webData.admission.filter(a => (a.category || '').toLowerCase() === 'eligibility');
       if (eligItems.length > 0) {
@@ -342,8 +344,8 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       return `📋 **Eligibility Criteria:**\n• **BCA:** 10+2 / PUC Pass with Mathematics / Computer Science / Statistics.\n• **B.Sc:** 10+2 / PUC Science Stream.`;
     }
 
-    // 🎯 4. PRIORITY 4: FEE STRUCTURE ONLY
-    if (q.includes('fee') || q.includes('cost') || q.includes('scholar') || q.includes('ssp') || q.includes('nsp') || q.includes('amount') || q.includes('payment')) {
+    // 🎯 4. PRIORITY 4: FEES ONLY
+    if (q.includes('fee') || q.includes('cost') || q.includes('scholar') || q.includes('ssp') || q.includes('nsp') || q.includes('payment')) {
       const feeItems = webData.admission.filter(a => (a.category || '').toLowerCase() === 'fees');
       let feeReply = `💰 **Fee Structure (From Admission Portal):**\n\n`;
       if (feeItems.length > 0) {
@@ -353,7 +355,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       return feeReply;
     }
 
-    // 🎯 5. PRIORITY 5: SPECIFIC BCA COURSES (Strict BCA vs Data Science)
+    // 🎯 5. PRIORITY 5: COURSES (BCA vs Data Science vs B.Sc)
     if (q.includes('data science') || q.includes('datascience') || q.includes('bca ds')) {
       const bcaDs = webData.courses.find(c => (c.name || '').toLowerCase().includes('data science') || (c.code || '').toLowerCase().includes('ds'));
       if (bcaDs) {
@@ -380,12 +382,11 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       }
     }
 
-    // 🎯 6. PRIORITY 6: ALL COURSES LIST
     if (q.includes('cours') || q.includes('branch') || q.includes('program') || q.includes('degre')) {
       return `📚 **Offered Courses & Combinations (From Courses Page):**\n\n${webData.courses.map((c: any) => `• **${c.name}** (${c.duration || '3 Years'})\n  Eligibility: ${c.eligibility}\n  Fees: *${c.fees}* | Seats: ${c.seats}\n  ${c.description || ''}`).join('\n\n')}`;
     }
 
-    // 🎯 7. PRIORITY 7: IMPORTANT DATES
+    // 🎯 6. PRIORITY 6: DATES
     if (q.includes('date') || q.includes('schedule') || q.includes('deadline')) {
       const dateItems = webData.admission.filter(a => (a.category || '').toLowerCase() === 'important_dates');
       if (dateItems.length > 0) {
@@ -393,26 +394,20 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       }
     }
 
-    // 🎯 8. PRIORITY 8: FAQ FULL LIST / GENERAL FAQ INQUIRY
-    if (q.includes('faq') || q.includes('frequently asked') || q.includes('questions')) {
-      const faqsList = webData.faqs.length > 0 ? webData.faqs : DEFAULT_FAQS;
-      return `💡 **Frequently Asked Questions (FAQ):**\n\n${faqsList.map((f: any, idx: number) => `${idx + 1}. **Q: ${f.question}**\n   **A:** ${f.answer}`).join('\n\n')}`;
-    }
-
-    // 🎯 9. PRIORITY 9: CONTACT DETAILS
+    // 🎯 7. PRIORITY 7: CONTACT
     if (q.includes('contact') || q.includes('phone') || q.includes('call') || q.includes('email') || q.includes('address') || q.includes('locat')) {
       return `📍 **Campus Contact Details (From Contact Page):**\n• **Institution:** ${webData.settings.college_name}\n• **Address:** ${webData.settings.address}\n• **Phone:** 📞 **${webData.settings.phone || '0816-2203500'}**\n• **Email:** 📧 **${webData.settings.email}**\n• **Website:** 🌐 ${webData.settings.website}`;
     }
 
-    // 🎯 10. SPECIFIC FAQ INDIVIDUAL QUESTION MATCH
+    // 🎯 8. PRIORITY 8: FAQ (Only runs if explicit question match occurs)
     for (const f of webData.faqs) {
       const fQ = (f.question || '').toLowerCase();
-      if (q === fQ || (q.length > 10 && fQ.includes(q)) || (fQ.length > 10 && q.includes(fQ))) {
+      if (q === fQ || (q.length > 15 && fQ.includes(q)) || (fQ.length > 15 && q.includes(fQ))) {
         return `💡 **FAQ - ${f.question}:**\n\n${f.answer}`;
       }
     }
 
-    // 🎯 11. TRAINED AI KNOWLEDGE BASE
+    // 🎯 9. PRIORITY 9: AI KNOWLEDGE BASE
     for (const kb of webData.knowledge) {
       const topic = (kb.topic || '').toLowerCase();
       if (q.includes(topic)) {
@@ -420,12 +415,12 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       }
     }
 
-    // GREETINGS
+    // 🎯 10. GREETINGS
     if (['hi', 'hello', 'hey', 'namaste', 'start'].some(g => q.startsWith(g))) {
       return `Hello! 👋 Welcome to **University College of Science, Tumkur**.\nHow can I help you regarding **Admissions, Courses, Department HODs, Fees, Hostels, or Contact details**?`;
     }
 
-    return `🏛️ **UCS Tumkur Campus Helpdesk:**\n• We offer **BCA, B.Sc, and M.Sc** programs across 4 departments.\n• For specific inquiries, contact the helpdesk at 📞 **${webData.settings.phone || '0816-2203500'}** or visit https://tumkuruniversity.ac.in`;
+    return `🏛️ **UCS Tumkur Campus Helpdesk:**\n• We offer **BCA, B.Sc, and M.Sc** programs across 4 departments.\n• For specific inquiries, contact the helpdesk at 📞 **${webData.settings.phone || '0816-2203500'}** or visit ${webData.settings.website || 'https://tumkuruniversity.ac.in'}`;
   };
 
   const handleSend = (e?: React.FormEvent, customText?: string) => {
