@@ -18,8 +18,6 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useCollegeSettings, useCourses, useDepartments, useFAQs } from '@/hooks/useCollegeData';
-import { Logo } from '@/components/Logo';
-import { AnnouncementBar } from '@/components/AnnouncementBar';
 import type { Route } from '@/types/route';
 
 interface Message {
@@ -50,7 +48,7 @@ const DEFAULT_AI_KNOWLEDGE = [
   { 
     id: 'kn-1', 
     topic: 'Admission Process', 
-    content: '🎓 **Admission Process & Eligibility:**\n\n1. **Application:** Submit the application form online or directly at the college admission desk.\n2. **Eligibility:** PUC / 10+2 with Science / Mathematics for BCA & B.Sc streams.\n3. **Documents Required:** 10th & 12th Marks Cards, Transfer Certificate (TC), Category & Income Certificates.\n4. **Selection:** Merit-based admission followed by document verification.\n\n📞 Admission Helpline: **0816-2203500**.' 
+    content: '🎓 **Admission Process & Eligibility:**\n\n1. **Application:** Submit application online or directly at the college admission desk.\n2. **Eligibility:** PUC / 10+2 with Science / Mathematics stream for BCA & B.Sc.\n3. **Required Documents:** 10th & 12th Marks Cards, Transfer Certificate (TC), Category & Income Certificates.\n4. **Selection:** Merit-based admission followed by document verification.\n\n📞 Admission Helpline: **0816-2203500**.' 
   },
   { 
     id: 'kn-2', 
@@ -60,12 +58,12 @@ const DEFAULT_AI_KNOWLEDGE = [
   { 
     id: 'kn-3', 
     topic: 'Fees & Scholarships', 
-    content: '💰 **Fee Structure & Scholarships:**\n\n• Fees follow **Karnataka State Government norms** (Approx Rs. 25,000 to Rs. 35,000 per year for BCA depending on merit/quota).\n• **Scholarships:** SSP (State Scholarship Portal) and NSP (National Scholarship Portal) are applicable for eligible students.' 
+    content: '💰 **Fee Structure & Financial Aid:**\n\n• Fees follow **Karnataka State Government norms** (Approx Rs. 25,000 to Rs. 35,000 per year for BCA depending on merit/quota).\n• **Scholarships:** SSP (State Scholarship Portal) and NSP (National Scholarship Portal) are available for eligible students.' 
   },
   { 
     id: 'kn-4', 
     topic: 'Hostel Facilities', 
-    content: '🏢 **Hostel Accommodation:**\n\n• Dedicated and secure hostels for both **Boys and Girls** near the campus.\n• Includes hygienic mess food, 24/7 security, purified drinking water, and Wi-Fi study halls.' 
+    content: '🏢 **Hostel Accommodation:**\n\n• Dedicated and secure hostels for both **Boys and Girls** situated near the campus.\n• Includes hygienic mess food, 24/7 security, purified drinking water, and Wi-Fi study halls.' 
   },
   { 
     id: 'kn-5', 
@@ -75,7 +73,7 @@ const DEFAULT_AI_KNOWLEDGE = [
   { 
     id: 'kn-6', 
     topic: 'Sports & NSS', 
-    content: '🏆 **Sports, NSS & Extracurriculars:**\n\n• Active **NSS** and **Youth Red Cross** units organizing state camps.\n• Extensive sports grounds for cricket, volleyball, football, indoor badminton, and student gym.' 
+    content: '🏆 **Sports, NSS & Extracurriculars:**\n\n• Active **NSS** and **Youth Red Cross** units organizing state camps.\n• Extensive sports grounds for cricket, volleyball, football, indoor badminton, and gym.' 
   }
 ];
 
@@ -268,7 +266,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     } catch {}
   };
 
-  // 🌟 Strict Priority Search Engine 🌟
+  // 🌟 Strict Priority Search Algorithm 🌟
   const analyzeAndReply = (query: string): string => {
     const q = query.toLowerCase().trim();
 
@@ -307,7 +305,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
           (q.includes('math') && dName.includes('math')) ||
           (q.includes('chem') && dName.includes('chem'))
         ) {
-          return `🏛️ **${d.name}:**\n• **Head of Department (HOD):** ${d.head}\n• **Overview:** ${d.description || 'Equipped with modern lab facilities and top faculty.'}`;
+          return `🏛️ **${d.name}:**\n• **Head of Department (HOD):** ${d.head}\n• **Overview:** ${d.description || 'Equipped with modern lab facilities and experienced faculty.'}`;
         }
       }
       return `🏛️ **Department Heads at UCS Tumkur:**\n\n${allDepts.map((d: any) => `• **${d.name}**\n  👤 Head: **${d.head}**\n  ${d.description || ''}`).join('\n\n')}`;
@@ -361,7 +359,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     if (q.includes('contact') || q.includes('phone') || q.includes('call') || q.includes('email') || q.includes('address') || q.includes('locat') || q.includes('help')) {
       const c = knowledgeBase.find(k => k.topic && (k.topic.toLowerCase().includes('contact') || k.topic.toLowerCase().includes('help')));
       if (c) return c.content;
-      return `📍 **Campus Contact Details:**\n• **Institution:** ${settings?.college_name || 'University College of Science, Tumkur'}\n• **Address:** ${settings?.address || 'Tumkur University Campus, BH Road, Tumkur - 572103'}\n• **Phone:** 📞 **${settings?.phone || '0816-2203500'}**\n• **Email:** 📧 **${settings?.email || 'ucscience@tumkuruniversity.ac.in'}**\n• **Website:** 🌐 https://tumkuruniversity.ac.in`;
+      return `📍 **Campus Contact Details:**\n• **Institution:** ${settings?.college_name || 'University College of Science, Tumkur'}\n• **Address:** ${settings?.address || 'Tumkur University Campus, BH Road, Tumkur - 572103'}\n• **Phone:** 📞 **0816-2203500**\n• **Email:** 📧 **${settings?.email || 'ucscience@tumkuruniversity.ac.in'}**\n• **Website:** 🌐 https://tumkuruniversity.ac.in`;
     }
 
     // 7️⃣ Priority: Sports & NSS
@@ -370,7 +368,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       return s ? s.content : DEFAULT_AI_KNOWLEDGE[5].content;
     }
 
-    // 8️⃣ Match all other Dynamic Knowledge items
+    // 8️⃣ Dynamic Knowledge
     const tokens = q.replace(/[^a-zA-Z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length >= 2);
     for (const item of knowledgeBase) {
       const topic = (item.topic || '').toLowerCase();
@@ -380,7 +378,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       }
     }
 
-    // 9️⃣ Match FAQs
+    // 9️⃣ FAQ Matching
     if (faqs && faqs.length > 0) {
       for (const faq of faqs) {
         if (faq.question && (q.includes(faq.question.toLowerCase()) || tokens.some(t => faq.question.toLowerCase().includes(t)))) {
@@ -394,7 +392,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       return `Hello! 👋 How can I assist you with **admissions, courses, department heads, fees, hostels, or campus details** today?`;
     }
 
-    return `Thank you for your question! For specific queries regarding "${query}", please contact the college helpdesk directly at 📞 **${settings?.phone || '0816-2203500'}** or visit https://tumkuruniversity.ac.in`;
+    return `Thank you for your question! For specific queries regarding "${query}", please contact the college helpdesk directly at 📞 **0816-2203500** or visit https://tumkuruniversity.ac.in`;
   };
 
   const handleSend = (e?: React.FormEvent, customText?: string) => {
@@ -426,7 +424,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       setMessages((prev) => [...prev, botMessage]);
       setIsTyping(false);
       await logDirectToSupabase(textToSend.trim(), botResponseText);
-    }, 250);
+    }, 200);
   };
 
   const handleOpenAddModal = () => {
@@ -481,93 +479,76 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-amber-50/70 via-teal-50/50 to-indigo-50/70 font-sans text-slate-800">
+    <div className="fixed inset-0 top-[60px] flex flex-col bg-slate-100 font-sans text-slate-800 z-10">
       
-      {/* Header */}
-      <header className="bg-gradient-to-r from-teal-700 via-emerald-600 to-teal-800 text-white py-4 px-4 shadow-md text-center shrink-0">
-        <div className="max-w-5xl mx-auto flex flex-col items-center gap-1.5">
-          <div className="p-1.5 bg-white/20 backdrop-blur-md rounded-2xl border border-white/30">
-            <Logo logoUrl={settings?.logo_url} size="md" />
-          </div>
-          <h1 className="text-lg md:text-2xl font-bold">{settings?.college_name ?? 'University College Of Science, Tumkur'}</h1>
-          <p className="text-xs text-teal-100">{settings?.address ?? 'Tumkur University Campus, BH Road, Tumkur - 572103'}</p>
-          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white/15 text-xs text-amber-300">
-            <Sparkles size={13} />
-            <span className="text-white font-semibold">AI Admission & Campus Enquiry Assistant</span>
-          </div>
-        </div>
-      </header>
-
-      <AnnouncementBar />
-
-      {/* Main Chat Box */}
-      <main className="flex-1 flex flex-col w-full max-w-6xl mx-auto p-2 sm:p-4 min-h-0">
-        <div className="flex-1 bg-white/95 backdrop-blur-xl rounded-3xl border border-teal-100 shadow-xl flex flex-col overflow-hidden w-full h-full min-h-[620px]">
+      {/* Main Chat Box - Fits Exactly into the Screen with Fixed Input Box at Bottom */}
+      <main className="flex-1 flex flex-col w-full max-w-5xl mx-auto p-2 sm:p-4 min-h-0 h-full">
+        <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-lg flex flex-col overflow-hidden w-full h-full">
           
-          {/* Top Bar */}
-          <div className="bg-slate-50/90 px-4 md:px-6 py-3 border-b border-slate-200/80 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md">
-                <Bot size={20} />
+          {/* Header Inside Chat Window */}
+          <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                <Bot size={18} />
               </div>
               <div>
-                <h2 className="text-sm md:text-base font-black text-slate-800 flex items-center gap-1.5">
+                <h2 className="text-xs sm:text-sm font-black text-slate-800 flex items-center gap-1.5 leading-tight">
                   <span>UCS AI Assistant</span>
-                  <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full">v2.4</span>
+                  <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-1.5 py-0.2 rounded-full">Live</span>
                 </h2>
-                <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-bold">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Cloud Live Connected</span>
+                <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-semibold">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>Online</span>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               {isAdminState && onNavigate && (
                 <button
                   type="button"
                   onClick={() => onNavigate('admin-dashboard')}
-                  className="px-3.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
                 >
-                  <ShieldCheck size={15} />
-                  <span>Admin Panel</span>
+                  <ShieldCheck size={13} />
+                  <span>Admin</span>
                 </button>
               )}
               <button 
                 onClick={() => setMessages([messages[0]])} 
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl cursor-pointer transition-colors"
+                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
                 title="Reset Conversation"
               >
-                <RefreshCw size={17} />
+                <RefreshCw size={15} />
               </button>
             </div>
           </div>
 
-          {/* Transcript Stream */}
-          <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-4 bg-white/60">
+          {/* Transcript Message Feed */}
+          <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3 bg-white">
             {messages.map((msg) => (
-              <div key={msg.id} className={`flex gap-3 w-full ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div key={msg.id} className={`flex gap-2.5 w-full ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                 
                 {msg.sender === 'bot' && (
-                  <div className="h-9 w-9 rounded-xl bg-teal-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-1">
-                    <Bot size={18} />
+                  <div className="h-7 w-7 rounded-lg bg-teal-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+                    <Bot size={15} />
                   </div>
                 )}
 
-                <div className={`space-y-1 ${msg.sender === 'user' ? 'max-w-[85%] md:max-w-[70%]' : 'max-w-[96%] md:max-w-[90%]'}`}>
-                  <div className={`p-4 md:p-5 rounded-2xl shadow-xs ${msg.sender === 'user' ? 'bg-blue-600 text-white rounded-tr-none font-medium' : 'bg-slate-50 text-slate-800 border border-slate-200/90 rounded-tl-none'}`}>
+                <div className={`space-y-1 ${msg.sender === 'user' ? 'max-w-[85%] sm:max-w-[70%]' : 'max-w-[95%] sm:max-w-[85%]'}`}>
+                  <div className={`p-3 sm:p-4 rounded-2xl shadow-2xs ${msg.sender === 'user' ? 'bg-blue-600 text-white rounded-tr-none font-medium text-xs sm:text-sm' : 'bg-slate-50 text-slate-800 border border-slate-200 rounded-tl-none text-xs sm:text-sm'}`}>
                     {msg.sender === 'user' ? (
-                      <p className="leading-relaxed text-sm md:text-base">{msg.text}</p>
+                      <p className="leading-relaxed">{msg.text}</p>
                     ) : (
                       <FormattedText text={msg.text} />
                     )}
                   </div>
-                  <p className={`text-[11px] text-slate-400 px-1 font-semibold ${msg.sender === 'user' ? 'text-right' : 'text-left'}`}>{msg.timestamp}</p>
+                  <p className={`text-[10px] text-slate-400 px-1 font-semibold ${msg.sender === 'user' ? 'text-right' : 'text-left'}`}>{msg.timestamp}</p>
                 </div>
 
                 {msg.sender === 'user' && (
-                  <div className="h-9 w-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-1">
-                    <User size={18} />
+                  <div className="h-7 w-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+                    <User size={15} />
                   </div>
                 )}
 
@@ -575,12 +556,12 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
             ))}
 
             {isTyping && (
-              <div className="flex gap-3 justify-start items-center">
-                <div className="h-9 w-9 rounded-xl bg-teal-600 text-white flex items-center justify-center"><Bot size={18} /></div>
-                <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-2xl rounded-tl-none flex items-center gap-1.5">
-                  <span className="h-2 w-2 bg-teal-600 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                  <span className="h-2 w-2 bg-teal-600 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                  <span className="h-2 w-2 bg-teal-600 rounded-full animate-bounce" />
+              <div className="flex gap-2.5 justify-start items-center">
+                <div className="h-7 w-7 rounded-lg bg-teal-600 text-white flex items-center justify-center"><Bot size={15} /></div>
+                <div className="bg-slate-50 border border-slate-200 p-2.5 rounded-xl rounded-tl-none flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 bg-teal-600 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                  <span className="h-1.5 w-1.5 bg-teal-600 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                  <span className="h-1.5 w-1.5 bg-teal-600 rounded-full animate-bounce" />
                 </div>
               </div>
             )}
@@ -588,9 +569,9 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
           </div>
 
           {/* Quick Prompts Bar */}
-          <div className="px-4 py-2 bg-slate-50/80 border-t border-slate-100 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0">
-            <span className="text-xs font-bold text-slate-400 uppercase shrink-0 flex items-center gap-1">
-              <Sparkles size={14} className="text-amber-500" />
+          <div className="px-3 py-1.5 bg-slate-50 border-t border-slate-100 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
+            <span className="text-[11px] font-bold text-slate-400 uppercase shrink-0 flex items-center gap-1">
+              <Sparkles size={12} className="text-amber-500" />
               <span>Ask:</span>
             </span>
 
@@ -599,44 +580,44 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
                 <button 
                   type="button" 
                   onClick={() => handleSend(undefined, p.prompt)} 
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-700 border border-slate-200 rounded-xl text-xs md:text-sm font-bold cursor-pointer transition-colors shadow-2xs"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-2xs"
                 >
                   {getPromptIcon(idx)}
                   <span>{p.label}</span>
                 </button>
 
                 {isAdminState && (
-                  <div className="flex items-center bg-white border border-slate-200 rounded-lg p-0.5">
-                    <button type="button" onClick={(e) => handleOpenEditModal(p, e)} className="p-1 text-slate-400 hover:text-blue-600 cursor-pointer"><Edit2 size={11} /></button>
-                    <button type="button" onClick={(e) => handleDeletePrompt(p.id, e)} className="p-1 text-slate-400 hover:text-rose-600 cursor-pointer"><Trash2 size={11} /></button>
+                  <div className="flex items-center bg-white border border-slate-200 rounded-md p-0.5">
+                    <button type="button" onClick={(e) => handleOpenEditModal(p, e)} className="p-0.5 text-slate-400 hover:text-blue-600 cursor-pointer"><Edit2 size={10} /></button>
+                    <button type="button" onClick={(e) => handleDeletePrompt(p.id, e)} className="p-0.5 text-slate-400 hover:text-rose-600 cursor-pointer"><Trash2 size={10} /></button>
                   </div>
                 )}
               </div>
             ))}
 
             {isAdminState && (
-              <button type="button" onClick={handleOpenAddModal} className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shrink-0 cursor-pointer shadow-xs">
-                <Plus size={14} />
+              <button type="button" onClick={handleOpenAddModal} className="p-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shrink-0 cursor-pointer">
+                <Plus size={13} />
               </button>
             )}
           </div>
 
-          {/* Input Chat Box */}
-          <div className="p-3 md:p-4 bg-white border-t border-slate-100 shrink-0">
+          {/* Fixed Bottom Input Chat Box */}
+          <div className="p-2.5 sm:p-3 bg-white border-t border-slate-100 shrink-0">
             <form onSubmit={(e) => handleSend(e)} className="flex items-center gap-2">
               <input 
                 type="text" 
                 value={input} 
                 onChange={(e) => setInput(e.target.value)} 
-                placeholder="Ask about admissions, courses, department heads, fees, hostel, sports..." 
-                className="flex-1 px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-600 focus:bg-white text-sm md:text-base font-medium outline-none transition-all" 
+                placeholder="Ask admission, courses, BCA, HOD, hostel, fees..." 
+                className="flex-1 px-3.5 py-2.5 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-600 focus:bg-white text-xs sm:text-sm font-medium outline-none transition-all" 
               />
               <button 
                 type="submit" 
                 disabled={!input.trim()} 
-                className="h-11 w-11 md:h-12 md:w-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-md disabled:opacity-50 cursor-pointer shrink-0 transition-all"
+                className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shadow-md disabled:opacity-50 cursor-pointer shrink-0"
               >
-                <Send size={18} />
+                <Send size={16} />
               </button>
             </form>
           </div>
@@ -644,29 +625,29 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
         </div>
       </main>
 
-      {/* Modal for Quick Prompts */}
+      {/* Modal for Prompt Management */}
       {isPromptModalOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200">
-            <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
-              <h3 className="font-extrabold text-base text-slate-800 flex items-center gap-2">
-                <Sparkles size={18} className="text-blue-600" />
+          <div className="bg-white rounded-2xl p-5 max-w-sm w-full shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
+              <h3 className="font-extrabold text-sm text-slate-800 flex items-center gap-1.5">
+                <Sparkles size={16} className="text-blue-600" />
                 <span>{editingPromptId ? 'Edit Quick Prompt' : 'Add Quick Prompt'}</span>
               </h3>
-              <button onClick={() => setIsPromptModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer"><X size={20} /></button>
+              <button onClick={() => setIsPromptModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer"><X size={18} /></button>
             </div>
-            <form onSubmit={handleSavePrompt} className="space-y-3.5 text-sm">
+            <form onSubmit={handleSavePrompt} className="space-y-3 text-xs">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Button Title</label>
-                <input type="text" required value={promptLabel} onChange={e => setPromptLabel(e.target.value)} placeholder="e.g. Sports" className="w-full p-2.5 bg-slate-50 border rounded-xl outline-none focus:border-blue-600 font-medium" />
+                <input type="text" required value={promptLabel} onChange={e => setPromptLabel(e.target.value)} placeholder="e.g. Sports" className="w-full p-2 bg-slate-50 border rounded-lg outline-none focus:border-blue-600 font-medium" />
               </div>
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Prompt Question</label>
-                <textarea required rows={2} value={promptText} onChange={e => setPromptText(e.target.value)} placeholder="Tell me about Sports" className="w-full p-2.5 bg-slate-50 border rounded-xl outline-none focus:border-blue-600 resize-none font-medium" />
+                <textarea required rows={2} value={promptText} onChange={e => setPromptText(e.target.value)} placeholder="Tell me about Sports" className="w-full p-2 bg-slate-50 border rounded-lg outline-none focus:border-blue-600 resize-none font-medium" />
               </div>
               <div className="flex gap-2 pt-1">
-                <button type="button" onClick={() => setIsPromptModalOpen(false)} className="flex-1 py-2.5 bg-slate-100 text-slate-600 font-bold rounded-xl cursor-pointer">Cancel</button>
-                <button type="submit" className="flex-1 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 cursor-pointer shadow-sm">Save</button>
+                <button type="button" onClick={() => setIsPromptModalOpen(false)} className="flex-1 py-2 bg-slate-100 text-slate-600 font-bold rounded-lg cursor-pointer">Cancel</button>
+                <button type="submit" className="flex-1 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 cursor-pointer shadow-sm">Save</button>
               </div>
             </form>
           </div>
