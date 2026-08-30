@@ -48,22 +48,27 @@ const STORAGE_KEYS = {
 
 const BASELINE_DATA = {
   depts: [
-    { name: 'Department of Computer Science & BCA', head: 'Dr. Ramani', description: 'Offering BCA, AI, data science, and web development with modern computer labs.' },
-    { name: 'Department of Physics & Electronics', head: 'Dr. Shwetha N.', description: 'Equipped with advanced research laboratories in electronics and material science.' },
-    { name: 'Department of Mathematics & Statistics', head: 'Prof. Manjunath B.', description: 'Analytical modeling, data analytics, and mathematical research.' },
-    { name: 'Department of Chemistry & Biochemistry', head: 'Dr. Geetha S.', description: 'Organic synthesis, environmental chemistry, and chemical analysis.' }
+    { name: 'Department of Computer Science & BCA', head: 'Dr. Ramani', description: 'Offering state-of-the-art education in software engineering, AI, data science, and web development with modern computer labs.' },
+    { name: 'Department of Physics & Electronics', head: 'Dr. Shwetha N.', description: 'Equipped with advanced research laboratories focusing on electronics, material science, and computational physics.' },
+    { name: 'Department of Mathematics & Statistics', head: 'Prof. Manjunath B.', description: 'Fostering analytical mindset, mathematical modeling, data analytics, and pure research.' },
+    { name: 'Department of Chemistry & Biochemistry', head: 'Dr. Geetha S.', description: 'Engaged in organic synthesis, environmental chemistry, and pharmaceutical analysis.' }
   ],
   courses: [
     { name: 'Bachelor of Computer Applications (BCA)', code: 'BCA', duration: '3 Years (6 Semesters)', eligibility: '10+2 / PUC Pass with Mathematics, Statistics, or Computer Science', fees: 'Rs. 25,000 / Year', seats: '60 Seats', description: 'Comprehensive curriculum in programming, web development, data structures, cloud computing, and software engineering.' },
-    { name: 'Bachelor of Science (B.Sc)', code: 'B.Sc (PMCs / CBZ)', duration: '3 Years (6 Semesters)', eligibility: '10+2 / PUC Science Stream', fees: 'Rs. 18,000 / Year', seats: '120 Seats', description: 'Physical and biological sciences with state-of-the-art laboratory practicals.' }
+    { name: 'BCA (Data Science & AI)', code: 'BCA-DS', duration: '3 Years (6 Semesters)', eligibility: '10+2 / PUC with Mathematics/Statistics', fees: 'Rs. 50,000 / Year', seats: '40 Seats', description: 'Specialized program covering Artificial Intelligence, Big Data, and Machine Learning.' },
+    { name: 'Bachelor of Science (B.Sc)', code: 'B.Sc (PMCs / CBZ)', duration: '3 Years (6 Semesters)', eligibility: '10+2 / PUC Science Stream', fees: 'Rs. 18,000 / Year', seats: '120 Seats', description: 'Physical and biological sciences with modern lab practicals.' }
   ],
   admission: [
-    { category: 'admission', title: 'Admission Guidelines', content: 'Candidates seeking admission to BCA/B.Sc must submit 10+2 marks cards along with TC and application form. Merit-based selection followed by document verification.' },
-    { category: 'eligibility', title: 'Eligibility Criteria', content: 'Applicants must have cleared the Karnataka 2nd PUC examination or equivalent 10+2 with minimum qualifying aggregate percentage in Science/Maths.' },
-    { category: 'fees', title: 'Fee Payment & Concessions', content: 'Tuition fees must be paid per academic year. Post-matric scholarships, SSP, NSP, and fee reimbursements apply for eligible category candidates.' }
+    { category: 'admission', title: '1) Merit List', content: 'Eligible students are shortlisted based on the merit list.' },
+    { category: 'admission', title: '2) Counselling', content: 'Shortlisted students are called for the counselling process.' },
+    { category: 'admission', title: '3) First Merit Selection', content: 'During counselling, students from the first merit list are given priority for seat selection.' },
+    { category: 'admission', title: '4) Payment Seat Selection', content: 'After the first merit selection, students eligible for payment seats can select the available seats.' },
+    { category: 'admission', title: '5) Fee Payment', content: 'Selected students must pay the prescribed admission fees.' },
+    { category: 'admission', title: '6) Document Submission', content: 'Students must submit all the required documents for verification.' },
+    { category: 'admission', title: '7) Admission Confirmation', content: 'After successful fee payment and document verification, the student\'s admission is confirmed.' }
   ],
   faqs: [
-    { question: 'How do I apply for BCA admission in UCS Tumkur?', answer: 'You can apply online through this admission portal or visit the college admission desk with original and photocopies of your marks cards.' },
+    { question: 'How do I apply for BCA admission in UCS Tumkur?', answer: 'You can apply online through this admission portal or visit the college admission desk with original marks cards.' },
     { question: 'What are the college working and library hours?', answer: 'Regular theory and practical classes run from 9:30 AM to 4:30 PM. The library remains open until 5:30 PM.' },
     { question: 'Are hostel facilities available?', answer: 'Yes, separate hostel facilities with mess services are provided for both boys and girls near campus.' }
   ],
@@ -79,8 +84,8 @@ const BASELINE_DATA = {
 const DEFAULT_PROMPTS: QuickPrompt[] = [
   { id: '1', label: 'Admission Process', prompt: 'Tell me about admission process' },
   { id: '2', label: 'BCA Course Details', prompt: 'Tell me about BCA course' },
-  { id: '3', label: 'Department Heads', prompt: 'Who are the department HODs?' },
-  { id: '4', label: 'Contact Helpdesk', prompt: 'How to contact college office?' },
+  { id: '3', label: 'Fee Structure', prompt: 'What is the fee structure?' },
+  { id: '4', label: 'Department Heads', prompt: 'Who are the department HODs?' },
 ];
 
 function FormattedText({ text }: { text: string }) {
@@ -133,7 +138,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     {
       id: 'welcome',
       sender: 'bot',
-      text: `Hello! 👋 Welcome to **University College of Science, Tumkur**.\nI am your **AI Campus & Admission Assistant**.\nI analyze data across **About (HODs), Courses (BCA/B.Sc), Admission, FAQs, and Contact**.\nHow can I help you today?`,
+      text: `Hello! 👋 Welcome to **University College of Science, Tumkur**.\nI am your **AI Campus Assistant**.\nAsk me anything regarding **Admissions, Courses, HODs, Fees, Eligibility, or Contact details**!`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
     },
   ]);
@@ -169,7 +174,17 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     setIsAdminState(getAdminStatus());
   }, [user, contextIsAdmin]);
 
-  // 🌟 Sync Data in Top-to-Bottom Natural Order (created_at ASC) 🌟
+  const sortNaturally = (list: any[]) => {
+    return [...list].sort((a, b) => {
+      const titleA = a.title || a.name || '';
+      const titleB = b.title || b.name || '';
+      const numA = parseInt(titleA.match(/\d+/)?.[0] || '999', 10);
+      const numB = parseInt(titleB.match(/\d+/)?.[0] || '999', 10);
+      if (numA !== numB) return numA - numB;
+      return (new Date(a.created_at || 0).getTime()) - (new Date(b.created_at || 0).getTime());
+    });
+  };
+
   const syncAllPages = async () => {
     let freshDepts = BASELINE_DATA.depts;
     let freshCourses = BASELINE_DATA.courses;
@@ -194,14 +209,13 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     } catch {}
 
     try {
-      // Always order ascending so top sections appear first!
       const [dRes, cRes, aRes, fRes, sRes, kRes] = await Promise.all([
-        supabase.from('college_departments').select('*').order('created_at', { ascending: true }),
-        supabase.from('college_courses').select('*').order('created_at', { ascending: true }),
-        supabase.from('college_information').select('*').order('created_at', { ascending: true }),
-        supabase.from('college_faqs').select('*').order('created_at', { ascending: true }),
+        supabase.from('college_departments').select('*'),
+        supabase.from('college_courses').select('*'),
+        supabase.from('college_information').select('*'),
+        supabase.from('college_faqs').select('*'),
         supabase.from('college_settings').select('*').limit(1).maybeSingle(),
-        supabase.from('chatbot_knowledge').select('*').order('created_at', { ascending: true })
+        supabase.from('chatbot_knowledge').select('*')
       ]);
 
       if (dRes.data && dRes.data.length > 0) freshDepts = dRes.data;
@@ -217,7 +231,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     setWebData({
       depts: freshDepts,
       courses: freshCourses,
-      admission: freshAdmission,
+      admission: sortNaturally(freshAdmission),
       faqs: freshFaqs,
       settings: freshSettings,
       knowledge: freshKb
@@ -261,12 +275,12 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     } catch {}
   };
 
-  // 🧠 Structured Top-to-Bottom Natural Intelligence 🧠
+  // 🧠 Strict Distinction & Semantic Router 🧠
   const parseAndAnswer = (query: string): string => {
     const q = query.toLowerCase().trim();
     const tokens = q.replace(/[^a-zA-Z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length >= 2);
 
-    // 1️⃣ CHECK DEPARTMENT HEADS / HODs FIRST (About Page)
+    // 🎯 1. CHECK DEPARTMENT HEADS / HODs FIRST (About Page)
     const isDeptHOD = q.includes('head') || q.includes('hod') || q.includes('faculty') || q.includes('ramani') || q.includes('shwetha') || q.includes('manjunath') || q.includes('geetha');
     if (isDeptHOD) {
       for (const d of webData.depts) {
@@ -281,76 +295,109 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
           (q.includes('math') && dName.includes('math')) ||
           (q.includes('chem') && dName.includes('chem'))
         ) {
-          return `🏛️ **${d.name}:**\n• **Head of Department (HOD):** ${d.head}\n• **Overview:** ${d.description || 'Offering modern lab education and experienced faculty.'}`;
+          return `🏛️ **${d.name} (About Page):**\n• **Head of Department (HOD):** ${d.head}\n• **Overview:** ${d.description || 'Offering modern lab education and experienced faculty.'}`;
         }
       }
-      return `🏛️ **Academic Departments & HODs (About Institution):**\n\n${webData.depts.map((d: any) => `• **${d.name}**\n  👤 Head: **${d.head}**\n  ${d.description || ''}`).join('\n\n')}`;
+      return `🏛️ **Academic Departments & HODs (About Page):**\n\n${webData.depts.map((d: any) => `• **${d.name}**\n  👤 Head: **${d.head}**\n  ${d.description || ''}`).join('\n\n')}`;
     }
 
-    // 2️⃣ CHECK ADMISSION PROCESS (Top Section of Admission Page)
-    const isAdmission = q.includes('admi') || q.includes('apply') || q.includes('seat') || q.includes('eligib') || q.includes('join') || q.includes('form') || q.includes('process');
-    if (isAdmission) {
-      const admGuidelines = webData.admission.find(a => (a.category || '').toLowerCase() === 'admission' || (a.title || '').toLowerCase().includes('admission'));
-      const eligGuidelines = webData.admission.find(a => (a.category || '').toLowerCase() === 'eligibility' || (a.title || '').toLowerCase().includes('eligibility'));
-      const datesGuidelines = webData.admission.find(a => (a.category || '').toLowerCase() === 'important_dates' || (a.title || '').toLowerCase().includes('dates') || (a.title || '').toLowerCase().includes('schedule'));
+    // 🎯 2. CHECK ADMISSION PROCESS ONLY (Steps 1 to 7 in Order)
+    const isProcessQuery = q.includes('process') || q.includes('steps') || q.includes('procedure') || q.includes('how to apply') || q.includes('how do i apply');
+    if (isProcessQuery || q === 'admission' || q === 'admissions') {
+      const processItems = webData.admission.filter(a => {
+        const cat = (a.category || '').toLowerCase();
+        const title = (a.title || '').toLowerCase();
+        return cat === 'admission' || title.match(/^\d+\)/);
+      });
 
-      let res = `🎓 **Admission Information (From Admission Portal):**\n\n`;
-      if (admGuidelines) {
-        res += `• **${admGuidelines.title}:**\n  ${admGuidelines.content}\n\n`;
-      } else {
-        res += `• **Admission Guidelines:**\n  Submit application form online or collect from college admission desk with 10th & 12th marks cards.\n\n`;
+      if (processItems.length > 0) {
+        const sorted = sortNaturally(processItems);
+        return `🎓 **Admission Process & Steps (From Admission Portal):**\n\n${sorted.map(item => `• **${item.title}:**\n  ${item.content}`).join('\n\n')}\n\n📞 Admission Helpline: **${webData.settings.phone || '0816-2203500'}**`;
       }
-
-      if (eligGuidelines) {
-        res += `• **${eligGuidelines.title}:**\n  ${eligGuidelines.content}\n\n`;
-      }
-
-      if (datesGuidelines) {
-        res += `• **${datesGuidelines.title}:**\n  ${datesGuidelines.content}\n\n`;
-      }
-
-      res += `📞 Admission Helpdesk: **${webData.settings.phone || '0816-2203500'}**`;
-      return res;
     }
 
-    // 3️⃣ CHECK SPECIFIC BCA COURSE (Prioritizes BCA main course overview over fees)
-    if (q.includes('bca')) {
-      const bca = webData.courses.find(c => {
+    // 🎯 3. CHECK ELIGIBILITY CRITERIA ONLY
+    const isEligibilityQuery = q.includes('eligib') || q.includes('criteria') || q.includes('qualification') || q.includes('requirement');
+    if (isEligibilityQuery) {
+      const eligItems = webData.admission.filter(a => (a.category || '').toLowerCase() === 'eligibility');
+      if (eligItems.length > 0) {
+        return `📋 **Eligibility Criteria (From Admission Page):**\n\n${eligItems.map(item => `• **${item.title}:**\n  ${item.content}`).join('\n\n')}`;
+      }
+      return `📋 **Eligibility Criteria:**\n• **BCA:** 10+2 / PUC Pass with Mathematics / Computer Science / Statistics.\n• **B.Sc:** 10+2 / PUC Science Stream.`;
+    }
+
+    // 🎯 4. CHECK FEE STRUCTURE ONLY
+    const isFeeQuery = q.includes('fee') || q.includes('cost') || q.includes('scholar') || q.includes('ssp') || q.includes('nsp') || q.includes('amount') || q.includes('payment');
+    if (isFeeQuery && !q.includes('bca') && !q.includes('bsc')) {
+      const feeItems = webData.admission.filter(a => (a.category || '').toLowerCase() === 'fees');
+      let feeReply = `💰 **Fee Structure (From Admission Portal):**\n\n`;
+      if (feeItems.length > 0) {
+        feeReply += feeItems.map(f => `• **${f.title}:** ${f.content}`).join('\n') + '\n\n';
+      }
+      feeReply += `• **Scholarships:** SSP, NSP, and Government fee concessions apply for eligible SC/ST/OBC students.`;
+      return feeReply;
+    }
+
+    // 🎯 5. CHECK SPECIFIC COURSES: BCA vs BCA DATA SCIENCE (Strict Separation)
+    if (q.includes('data science') || q.includes('datascience') || q.includes('bca ds')) {
+      const bcaDs = webData.courses.find(c => {
+        const name = (c.name || '').toLowerCase();
+        return name.includes('data science') || name.includes('datascience');
+      });
+      if (bcaDs) {
+        return `📚 **${bcaDs.name} (${bcaDs.code || 'BCA-DS'}):**\n• **Duration:** ${bcaDs.duration || '3 Years (6 Semesters)'}\n• **Eligibility:** ${bcaDs.eligibility || '10+2 / PUC with Mathematics/Statistics'}\n• **Fees:** ${bcaDs.fees || 'Rs. 50,000 / Year'}\n• **Seats:** ${bcaDs.seats || '40 Seats'}\n• **Overview:** ${bcaDs.description || 'Specialized program covering Artificial Intelligence, Big Data, and Machine Learning.'}`;
+      }
+    }
+
+    // Pure BCA Inquiry (Matches BCA only, ignores Data Science)
+    if (q.includes('bca') || q.includes('bachelor of computer applications')) {
+      const pureBca = webData.courses.find(c => {
         const name = (c.name || '').toLowerCase();
         const code = (c.code || '').toLowerCase();
-        // Match pure BCA or main BCA first, not just Data Science
-        return (code === 'bca' || name.includes('bachelor of computer applications')) && !name.includes('data science');
-      }) || webData.courses.find(c => (c.name || '').toLowerCase().includes('bca'));
+        const isBca = code === 'bca' || name.includes('bachelor of computer applications') || name.startsWith('bca');
+        const isDs = name.includes('data science') || name.includes('datascience') || code.includes('ds');
+        return isBca && !isDs;
+      }) || webData.courses.find(c => (c.code || '').toLowerCase() === 'bca') || webData.courses[0];
 
-      if (bca) {
-        return `📚 **${bca.name} (${bca.code || 'BCA'}):**\n• **Duration:** ${bca.duration || '3 Years (6 Semesters)'}\n• **Eligibility:** ${bca.eligibility || '10+2 / PUC with Mathematics/Computer Science'}\n• **Tuition Fees:** ${bca.fees || 'Rs. 25,000 / Year'}\n• **Total Seats:** ${bca.seats || '60 Seats'}\n• **Description:** ${bca.description || 'Comprehensive programming, databases, web development, and AI.'}`;
+      if (pureBca) {
+        return `📚 **${pureBca.name} (${pureBca.code || 'BCA'}):**\n• **Duration:** ${pureBca.duration || '3 Years (6 Semesters)'}\n• **Eligibility:** ${pureBca.eligibility || '10+2 / PUC with Mathematics/Computer Science'}\n• **Fees:** ${pureBca.fees || 'Rs. 25,000 / Year'}\n• **Seats:** ${pureBca.seats || '60 Seats'}\n• **Overview:** ${pureBca.description || 'Comprehensive programming, databases, web development, and cloud computing.'}`;
       }
     }
 
-    // 4️⃣ CHECK ALL COURSES (Courses Page)
-    const isCourse = q.includes('cours') || q.includes('branch') || q.includes('program') || q.includes('bsc') || q.includes('msc') || q.includes('degre');
-    if (isCourse) {
+    // Specific B.Sc Inquiry
+    if (q.includes('bsc') || q.includes('b.sc') || q.includes('bachelor of science')) {
+      const bsc = webData.courses.find(c => {
+        const name = (c.name || '').toLowerCase();
+        const code = (c.code || '').toLowerCase();
+        return code.includes('bsc') || name.includes('bachelor of science') || name.includes('b.sc');
+      });
+      if (bsc) {
+        return `📚 **${bsc.name} (${bsc.code || 'B.Sc'}):**\n• **Duration:** ${bsc.duration || '3 Years (6 Semesters)'}\n• **Eligibility:** ${bsc.eligibility || '10+2 / PUC Science Stream'}\n• **Fees:** ${bsc.fees || 'Rs. 18,000 / Year'}\n• **Seats:** ${bsc.seats || '120 Seats'}\n• **Overview:** ${bsc.description || 'Core physical and biological sciences with lab practicals.'}`;
+      }
+    }
+
+    // 🎯 6. ALL COURSES LIST
+    const isCourseQuery = q.includes('cours') || q.includes('branch') || q.includes('program') || q.includes('degre') || q.includes('combinations');
+    if (isCourseQuery) {
       return `📚 **Offered Courses & Combinations (From Courses Page):**\n\n${webData.courses.map((c: any) => `• **${c.name}** (${c.duration || '3 Years'})\n  Eligibility: ${c.eligibility}\n  Fees: *${c.fees}* | Seats: ${c.seats}\n  ${c.description || ''}`).join('\n\n')}`;
     }
 
-    // 5️⃣ CHECK FEES ONLY (When user explicitly asks "fees" or "cost")
-    const isFeeOnly = q.includes('fee') || q.includes('cost') || q.includes('scholar') || q.includes('ssp') || q.includes('nsp') || q.includes('amount') || q.includes('pay');
-    if (isFeeOnly) {
-      let reply = `💰 **Course Fee Structure & Scholarships:**\n\n`;
-      webData.courses.forEach((c: any) => {
-        if (c.fees) reply += `• **${c.name}:** *${c.fees}*\n`;
-      });
-      reply += `\n• **Scholarships:** Post-matric SSP (State Scholarship Portal) and NSP apply for eligible students.\n• Fee concession is available as per Karnataka Government norms for SC/ST/OBC category candidates.`;
-      return reply;
+    // 🎯 7. IMPORTANT DATES
+    const isDatesQuery = q.includes('date') || q.includes('schedule') || q.includes('deadline') || q.includes('last date');
+    if (isDatesQuery) {
+      const dateItems = webData.admission.filter(a => (a.category || '').toLowerCase() === 'important_dates');
+      if (dateItems.length > 0) {
+        return `📅 **Important Dates & Schedule (From Admission Page):**\n\n${dateItems.map(d => `• **${d.title}:**\n  ${d.content}`).join('\n\n')}`;
+      }
     }
 
-    // 6️⃣ CHECK CONTACT & CAMPUS DETAILS (Contact Page)
+    // 🎯 8. CONTACT & CAMPUS DETAILS
     const isContact = q.includes('contact') || q.includes('phone') || q.includes('call') || q.includes('email') || q.includes('address') || q.includes('locat') || q.includes('help') || q.includes('website');
     if (isContact) {
-      return `📍 **Campus Contact & Office Details (From Contact Page):**\n• **Institution:** ${webData.settings.college_name}\n• **Address:** ${webData.settings.address}\n• **Phone:** 📞 **${webData.settings.phone}**\n• **Email:** 📧 **${webData.settings.email}**\n• **Website:** 🌐 ${webData.settings.website}`;
+      return `📍 **Campus Contact Details (From Contact Page):**\n• **Institution:** ${webData.settings.college_name}\n• **Address:** ${webData.settings.address}\n• **Phone:** 📞 **${webData.settings.phone}**\n• **Email:** 📧 **${webData.settings.email}**\n• **Website:** 🌐 ${webData.settings.website}`;
     }
 
-    // 7️⃣ CHECK FAQ PAGE
+    // 🎯 9. FAQ SEARCH
     for (const f of webData.faqs) {
       const fQ = (f.question || '').toLowerCase();
       if (tokens.some(t => fQ.includes(t) && t.length >= 3) || q.includes(fQ)) {
@@ -358,7 +405,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       }
     }
 
-    // 8️⃣ CHECK TRAINED AI KNOWLEDGE
+    // 🎯 10. AI KNOWLEDGE BASE
     for (const kb of webData.knowledge) {
       const topic = (kb.topic || '').toLowerCase();
       const content = (kb.content || '').toLowerCase();
@@ -367,7 +414,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       }
     }
 
-    // 9️⃣ GREETINGS
+    // GREETINGS
     if (['hi', 'hello', 'hey', 'namaste', 'start'].some(g => q.startsWith(g))) {
       return `Hello! 👋 Welcome to **University College of Science, Tumkur**.\nHow can I help you regarding **Admissions, Courses, Department HODs, Fees, Hostels, or Contact details**?`;
     }
@@ -473,7 +520,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
                 <h2 className="text-xs sm:text-sm font-black text-slate-800 leading-tight">UCS AI Assistant</h2>
                 <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-semibold">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Online (Connected to All Pages)</span>
+                  <span>Online (Synchronized with All Pages)</span>
                 </div>
               </div>
             </div>
