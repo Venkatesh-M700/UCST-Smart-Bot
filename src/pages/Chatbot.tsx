@@ -269,12 +269,13 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     } catch {}
   };
 
-  // 🧠 Absolute Direct Router (Prevents FAQ Overlap) 🧠
+  // 🧠 Absolute Direct Semantic Router with Zero FAQ False-Positives 🧠
   const parseAndAnswer = (query: string): string => {
     const q = query.toLowerCase().trim();
     const depts = (webData.depts && webData.depts.length > 0) ? webData.depts : DEFAULT_DEPTS;
 
     // 🎯 1. PRIORITY 1: DEPARTMENTS & HODS (About Page)
+    // Matches: "our departments", "department", "departments", "hod", "head", "faculty"
     const isDeptQuery = q.includes('depart') || q.includes('dept') || q.includes('head') || q.includes('hod') || q.includes('faculty') || q.includes('staff') || q.includes('ramani') || q.includes('shwetha') || q.includes('manjunath') || q.includes('geetha');
     if (isDeptQuery) {
       // Individual department match
@@ -292,11 +293,11 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
           return `🏛️ **${d.name} (About Page):**\n• **Head of Department (HOD):** ${d.head}\n• **Overview:** ${d.description || 'Offering modern lab education and experienced faculty.'}`;
         }
       }
-      // Full departments overview
+      // Return full list of departments from About.tsx
       return `🏛️ **Our Departments & Heads (From About Page):**\n\n${depts.map((d: any, idx: number) => `${idx + 1}. **${d.name}**\n   👤 Head: **${d.head}**\n   ${d.description || ''}`).join('\n\n')}`;
     }
 
-    // 🎯 2. PRIORITY 2: ADMISSION PROCESS (Admission Page Steps 1-7)
+    // 🎯 2. PRIORITY 2: ADMISSION PROCESS & STEPS (Admission Page Steps 1 to 7)
     const isProcessQuery = q.includes('process') || q.includes('steps') || q.includes('procedure') || q.includes('how to apply') || q.includes('how do i apply');
     if (isProcessQuery || q === 'admission' || q === 'admissions') {
       const processItems = webData.admission.filter(a => {
@@ -311,7 +312,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       }
     }
 
-    // 🎯 3. PRIORITY 3: ELIGIBILITY CRITERIA
+    // 🎯 3. PRIORITY 3: ELIGIBILITY CRITERIA ONLY
     const isEligibilityQuery = q.includes('eligib') || q.includes('criteria') || q.includes('qualification');
     if (isEligibilityQuery) {
       const eligItems = webData.admission.filter(a => (a.category || '').toLowerCase() === 'eligibility');
@@ -321,7 +322,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       return `📋 **Eligibility Criteria:**\n• **BCA:** 10+2 / PUC Pass with Mathematics / Computer Science / Statistics.\n• **B.Sc:** 10+2 / PUC Science Stream.`;
     }
 
-    // 🎯 4. PRIORITY 4: FEE STRUCTURE
+    // 🎯 4. PRIORITY 4: FEE STRUCTURE ONLY
     const isFeeQuery = q.includes('fee') || q.includes('cost') || q.includes('scholar') || q.includes('ssp') || q.includes('nsp') || q.includes('amount') || q.includes('payment');
     if (isFeeQuery && !q.includes('bca') && !q.includes('bsc')) {
       const feeItems = webData.admission.filter(a => (a.category || '').toLowerCase() === 'fees');
@@ -333,7 +334,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       return feeReply;
     }
 
-    // 🎯 5. PRIORITY 5: SPECIFIC BCA COURSES (Strict BCA vs Data Science Distinction)
+    // 🎯 5. PRIORITY 5: SPECIFIC COURSES (Strict BCA vs BCA Data Science vs B.Sc)
     if (q.includes('data science') || q.includes('datascience') || q.includes('bca ds')) {
       const bcaDs = webData.courses.find(c => {
         const name = (c.name || '').toLowerCase();
@@ -391,7 +392,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     // 🎯 9. PRIORITY 9: FAQ EXACT QUESTION MATCH (Search in question ONLY)
     for (const f of webData.faqs) {
       const fQ = (f.question || '').toLowerCase();
-      if (q === fQ || q.includes(fQ) || (fQ.length > 10 && fQ.includes(q))) {
+      if (q === fQ || (q.length > 8 && fQ.includes(q)) || (fQ.length > 8 && q.includes(fQ))) {
         return `💡 **FAQ - ${f.question}:**\n\n${f.answer}`;
       }
     }
@@ -536,7 +537,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
             </div>
           </div>
 
-          {/* Transcript Message Feed */}
+          {/* Transcript Feed */}
           <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3 bg-white">
             {messages.map((msg) => (
               <div key={msg.id} className={`flex gap-2 w-full ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
