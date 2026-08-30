@@ -39,7 +39,6 @@ interface ChatbotProps {
   onNavigate?: (route: Route) => void;
 }
 
-// 🌟 Default System Knowledge (Fallback Baseline) 🌟
 const DEFAULT_DEPTS = [
   { name: 'Department of Computer Science & BCA', head: 'Dr. Ramani', description: 'Offering BCA, AI, data science, and web development with modern computer labs.' },
   { name: 'Department of Physics & Electronics', head: 'Dr. Shwetha N.', description: 'Equipped with advanced research laboratories in electronics and material science.' },
@@ -50,23 +49,23 @@ const DEFAULT_DEPTS = [
 const DEFAULT_AI_KNOWLEDGE = [
   { 
     id: 'kn-1', 
-    topic: 'Admission Process & Eligibility', 
-    content: '🎓 **Admission Process & Eligibility:**\n\n1. **Application:** Submit application online or collect it from the college admission desk.\n2. **Eligibility:** PUC / 10+2 with Science / Mathematics stream.\n3. **Required Documents:** 10th & 12th Marks Cards, Transfer Certificate (TC), Category & Income Certificates.\n4. **Selection:** Merit-based admission followed by document verification.\n\n📞 Admission Helpline: **0816-2203500**.' 
+    topic: 'Admission Process', 
+    content: '🎓 **Admission Process & Eligibility:**\n\n1. **Application:** Submit the application form online or directly at the college admission desk.\n2. **Eligibility:** PUC / 10+2 with Science / Mathematics for BCA & B.Sc streams.\n3. **Documents Required:** 10th & 12th Marks Cards, Transfer Certificate (TC), Category & Income Certificates.\n4. **Selection:** Merit-based admission followed by document verification.\n\n📞 Admission Helpline: **0816-2203500**.' 
   },
   { 
     id: 'kn-2', 
     topic: 'Courses Offered', 
-    content: '📚 **Academic Programs Offered:**\n\n• **BCA** (Bachelor of Computer Applications) - 3 Years\n• **B.Sc** (PMCs, CBZ, Electronics, Biotechnology, Data Science) - 3 Years\n• **M.Sc** (Computer Science, Physics, Chemistry, Mathematics) - 2 Years\n\nAll programs are affiliated with Tumkur University.' 
+    content: '📚 **Academic Programs Offered:**\n\n• **BCA** (Bachelor of Computer Applications) - 3 Years\n• **B.Sc** (PMCs, CBZ, Electronics, Biotechnology, Data Science) - 3 Years\n• **M.Sc** (Computer Science, Physics, Chemistry, Mathematics) - 2 Years\n\nAll programs are affiliated with Tumkur University with modern lab facilities.' 
   },
   { 
     id: 'kn-3', 
     topic: 'Fees & Scholarships', 
-    content: '💰 **Fee Structure & Financial Aid:**\n\n• Tuition fees follow **Karnataka Government norms** (Approx Rs. 25,000 to Rs. 35,000/year for BCA depending on merit/quota).\n• **Scholarships:** SSP (State Scholarship Portal) and NSP (National Scholarship Portal) are available for eligible students.' 
+    content: '💰 **Fee Structure & Scholarships:**\n\n• Fees follow **Karnataka State Government norms** (Approx Rs. 25,000 to Rs. 35,000 per year for BCA depending on merit/quota).\n• **Scholarships:** SSP (State Scholarship Portal) and NSP (National Scholarship Portal) are applicable for eligible students.' 
   },
   { 
     id: 'kn-4', 
     topic: 'Hostel Facilities', 
-    content: '🏢 **Hostel Accommodation:**\n\n• Secure hostel facilities available for both **Boys and Girls** near campus.\n• Includes hygienic mess food, 24/7 security, purified drinking water, and study halls.' 
+    content: '🏢 **Hostel Accommodation:**\n\n• Dedicated and secure hostels for both **Boys and Girls** near the campus.\n• Includes hygienic mess food, 24/7 security, purified drinking water, and Wi-Fi study halls.' 
   },
   { 
     id: 'kn-5', 
@@ -76,7 +75,7 @@ const DEFAULT_AI_KNOWLEDGE = [
   { 
     id: 'kn-6', 
     topic: 'Sports & NSS', 
-    content: '🏆 **Sports, NSS & Extracurriculars:**\n\n• Active **NSS** and **Youth Red Cross** units organizing social service camps.\n• Extensive sports grounds for cricket, volleyball, football, indoor badminton, and gym.' 
+    content: '🏆 **Sports, NSS & Extracurriculars:**\n\n• Active **NSS** and **Youth Red Cross** units organizing state camps.\n• Extensive sports grounds for cricket, volleyball, football, indoor badminton, and student gym.' 
   }
 ];
 
@@ -90,7 +89,6 @@ const DEFAULT_PROMPTS: QuickPrompt[] = [
 const KNOWLEDGE_KEY = 'ucs_admin_knowledge';
 const DEPT_STORAGE_KEY = 'ucs_crud_departments';
 
-// 🌟 Markdown & Link Parser 🌟
 function FormattedText({ text }: { text: string }) {
   const parseContent = (input: string) => {
     let parsed = input.replace(
@@ -270,135 +268,122 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     } catch {}
   };
 
-  // 🌟 Universal Comprehensive Analyzer across ALL Website Pages 🌟
+  // 🌟 Priority-Ranked Multi-Domain Intelligent Matching 🌟
   const analyzeAndReply = (query: string): string => {
     const q = query.toLowerCase().trim();
-    const tokens = q.replace(/[^a-zA-Z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length >= 2);
 
-    // 1. Gather All Available Department Data (From DB + LocalStorage + Default)
-    let allDepts: any[] = [];
+    // Load dynamic knowledge from LocalStorage if fresh
+    let knowledgeBase = dynamicKnowledge;
+    try {
+      const local = localStorage.getItem(KNOWLEDGE_KEY);
+      if (local) knowledgeBase = JSON.parse(local);
+    } catch {}
+
+    // Load Department Data
+    let allDepts = departments && departments.length > 0 ? departments : DEFAULT_DEPTS;
     try {
       const localDepts = localStorage.getItem(DEPT_STORAGE_KEY);
       if (localDepts) allDepts = JSON.parse(localDepts);
     } catch {}
-    if (!allDepts || allDepts.length === 0) {
-      allDepts = (departments && departments.length > 0) ? departments : DEFAULT_DEPTS;
-    }
 
-    // Check Department & HOD queries (e.g. "Ramani", "Shwetha", "HOD", "Computer Science head", "Physics head")
-    for (const d of allDepts) {
-      const dName = (d.name || '').toLowerCase();
-      const dHead = (d.head || '').toLowerCase();
-      const dDesc = (d.description || '').toLowerCase();
-
-      if (
-        (dHead && q.includes(dHead)) ||
-        tokens.some(t => dHead.includes(t) && t.length > 3) ||
-        (q.includes('head') && dName.split(' ').some(w => q.includes(w) && w.length > 3)) ||
-        (q.includes('hod') && dName.split(' ').some(w => q.includes(w) && w.length > 3))
-      ) {
-        return `🏛️ **${d.name}:**\n• **Head of Department (HOD):** ${d.head}\n• **Overview:** ${d.description || 'Dedicated academic department with modern lab facilities.'}`;
+    // 🎯 PRIORITY 1: DEPARTMENT HEAD / HOD QUERIES
+    const isHeadQuery = q.includes('head') || q.includes('hod') || q.includes('ramani') || q.includes('shwetha') || q.includes('manjunath') || q.includes('geetha');
+    if (isHeadQuery) {
+      for (const d of allDepts) {
+        const dName = (d.name || '').toLowerCase();
+        const dHead = (d.head || '').toLowerCase();
+        
+        if (
+          (dHead && q.includes(dHead)) ||
+          (q.includes('bca') && dName.includes('bca')) ||
+          (q.includes('computer') && dName.includes('computer')) ||
+          (q.includes('physics') && dName.includes('physics')) ||
+          (q.includes('math') && dName.includes('math')) ||
+          (q.includes('chem') && dName.includes('chem'))
+        ) {
+          return `🏛️ **${d.name}:**\n• **Head of Department (HOD):** ${d.head}\n• **Overview:** ${d.description || 'Dedicated department with modern lab facilities and experienced faculty.'}`;
+        }
       }
+      return `🏛️ **Department Heads at UCS Tumkur:**\n\n${allDepts.map((d: any) => `• **${d.name}**\n  👤 Head: **${d.head}**\n  ${d.description || ''}`).join('\n\n')}`;
     }
 
-    if (q.includes('hod') || q.includes('head') || q.includes('dept') || q.includes('department') || q.includes('faculty') || q.includes('staff')) {
-      return `🏛️ **Departments & Heads at UCS Tumkur:**\n\n${allDepts.map((d: any) => `• **${d.name}**\n  👤 Head: **${d.head}**\n  ${d.description || ''}`).join('\n\n')}`;
-    }
-
-    // 2. Admission Queries (Instant Direct Response)
-    if (
-      q.includes('admi') || 
-      q.includes('apply') || 
-      q.includes('seat') || 
-      q.includes('eligib') || 
-      q.includes('join') ||
-      q.includes('how to apply')
-    ) {
-      const admFromKnowledge = dynamicKnowledge.find(k => 
+    // 🎯 PRIORITY 2: ADMISSION QUERIES (admission, bca admission, how to join, apply, eligibility)
+    const isAdmissionQuery = q.includes('admi') || q.includes('apply') || q.includes('seat') || q.includes('eligib') || q.includes('join') || q.includes('form') || q.includes('how to apply');
+    if (isAdmissionQuery) {
+      const adm = knowledgeBase.find(k => 
         (k.topic && k.topic.toLowerCase().includes('admi')) || 
         (k.content && k.content.toLowerCase().includes('admission'))
       );
-      if (admFromKnowledge) return admFromKnowledge.content;
+      if (adm) return adm.content;
       return DEFAULT_AI_KNOWLEDGE[0].content;
     }
 
-    // 3. Courses & Fees Queries (Courses Page Data)
-    if (
-      q.includes('cours') || 
-      q.includes('branch') || 
-      q.includes('program') ||
-      q.includes('bca') || 
-      q.includes('bsc') || 
-      q.includes('msc') ||
-      q.includes('degree')
-    ) {
+    // 🎯 PRIORITY 3: FEES & SCHOLARSHIP QUERIES
+    const isFeeQuery = q.includes('fee') || q.includes('cost') || q.includes('scholar') || q.includes('ssp') || q.includes('nsp') || q.includes('amount') || q.includes('pay');
+    if (isFeeQuery) {
+      const fee = knowledgeBase.find(k => 
+        (k.topic && (k.topic.toLowerCase().includes('fee') || k.topic.toLowerCase().includes('scholar'))) ||
+        (k.content && k.content.toLowerCase().includes('fee'))
+      );
+      if (fee) return fee.content;
+      return DEFAULT_AI_KNOWLEDGE[2].content;
+    }
+
+    // 🎯 PRIORITY 4: COURSES QUERIES
+    const isCourseQuery = q.includes('cours') || q.includes('branch') || q.includes('program') || q.includes('bca') || q.includes('bsc') || q.includes('msc') || q.includes('degre');
+    if (isCourseQuery) {
+      const crs = knowledgeBase.find(k => k.topic && k.topic.toLowerCase().includes('cours'));
+      if (crs) return crs.content;
       if (courses && courses.length > 0) {
-        return `📚 **Programs Offered at UCS Tumkur:**\n\n${courses.map((c: any) => `• **${c.name}** (${c.duration || '3 Years'})\n  Eligibility: ${c.eligibility || 'PUC / 10+2 with Science/Maths'}\n  Fees: *${c.fees || 'As per govt norms'}*`).join('\n\n')}`;
+        return `📚 **Academic Programs at UCS Tumkur:**\n\n${courses.map((c: any) => `• **${c.name}** (${c.duration || '3 Years'})\n  Eligibility: ${c.eligibility || 'PUC/10+2 with Science/Maths'}\n  Fees: *${c.fees || 'As per govt norms'}*`).join('\n\n')}`;
       }
       return DEFAULT_AI_KNOWLEDGE[1].content;
     }
 
-    // 4. Fees & Scholarship Queries
-    if (q.includes('fee') || q.includes('cost') || q.includes('scholar') || q.includes('ssp') || q.includes('nsp') || q.includes('amount') || q.includes('pay')) {
-      const feeKnowledge = dynamicKnowledge.find(k => 
-        (k.topic && (k.topic.toLowerCase().includes('fee') || k.topic.toLowerCase().includes('scholar'))) ||
-        (k.content && k.content.toLowerCase().includes('fee'))
-      );
-      if (feeKnowledge) return feeKnowledge.content;
-      return DEFAULT_AI_KNOWLEDGE[2].content;
-    }
-
-    // 5. Hostel Queries
+    // 🎯 PRIORITY 5: HOSTEL QUERIES
     if (q.includes('host') || q.includes('room') || q.includes('stay') || q.includes('mess')) {
-      const h = dynamicKnowledge.find(k => k.topic && k.topic.toLowerCase().includes('host'));
+      const h = knowledgeBase.find(k => k.topic && k.topic.toLowerCase().includes('host'));
       return h ? h.content : DEFAULT_AI_KNOWLEDGE[3].content;
     }
 
-    // 6. Contact, Location, Phone & Address (Contact Page Data)
-    if (
-      q.includes('contact') || 
-      q.includes('phone') || 
-      q.includes('call') || 
-      q.includes('email') || 
-      q.includes('address') || 
-      q.includes('locat') || 
-      q.includes('help') ||
-      q.includes('number')
-    ) {
-      return `📍 **Campus Contact & Helpdesk:**\n• **Institution:** ${settings?.college_name || 'University College of Science, Tumkur'}\n• **Address:** ${settings?.address || 'Tumkur University Campus, BH Road, Tumkur - 572103'}\n• **Phone:** 📞 **${settings?.phone || '0816-2203500'}**\n• **Email:** 📧 **${settings?.email || 'ucscience@tumkuruniversity.ac.in'}**\n• **Website:** 🌐 https://tumkuruniversity.ac.in`;
+    // 🎯 PRIORITY 6: CONTACT & HELPDESK
+    if (q.includes('contact') || q.includes('phone') || q.includes('call') || q.includes('email') || q.includes('address') || q.includes('locat') || q.includes('help')) {
+      const c = knowledgeBase.find(k => k.topic && (k.topic.toLowerCase().includes('contact') || k.topic.toLowerCase().includes('help')));
+      if (c) return c.content;
+      return `📍 **Campus Contact Details:**\n• **Institution:** ${settings?.college_name || 'University College of Science, Tumkur'}\n• **Address:** ${settings?.address || 'Tumkur University Campus, BH Road, Tumkur - 572103'}\n• **Phone:** 📞 **${settings?.phone || '0816-2203500'}**\n• **Email:** 📧 **${settings?.email || 'ucscience@tumkuruniversity.ac.in'}**\n• **Website:** 🌐 https://tumkuruniversity.ac.in`;
     }
 
-    // 7. Sports, NSS & Campus Activities
-    if (q.includes('sport') || q.includes('gym') || q.includes('nss') || q.includes('activ') || q.includes('cultur')) {
-      const s = dynamicKnowledge.find(k => k.topic && (k.topic.toLowerCase().includes('sport') || k.topic.toLowerCase().includes('nss')));
+    // 🎯 PRIORITY 7: SPORTS & NSS
+    if (q.includes('sport') || q.includes('gym') || q.includes('nss') || q.includes('activ')) {
+      const s = knowledgeBase.find(k => k.topic && (k.topic.toLowerCase().includes('sport') || k.topic.toLowerCase().includes('nss')));
       return s ? s.content : DEFAULT_AI_KNOWLEDGE[5].content;
     }
 
-    // 8. FAQ Database Search
-    if (faqs && faqs.length > 0) {
-      for (const faq of faqs) {
-        if (faq.question && (q.includes(faq.question.toLowerCase()) || tokens.some(t => faq.question.toLowerCase().includes(t)))) {
-          return `💡 **FAQ - ${faq.question}**\n\n${faq.answer}`;
-        }
-      }
-    }
-
-    // 9. Match all dynamic AI Knowledge items
-    for (const item of dynamicKnowledge) {
-      const t = (item.topic || '').toLowerCase();
-      const c = (item.content || '').toLowerCase();
-      if (tokens.some(token => t.includes(token) || c.includes(token))) {
+    // 🎯 PRIORITY 8: ALL OTHER TRAINED KNOWLEDGE
+    const tokens = q.replace(/[^a-zA-Z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length >= 2);
+    for (const item of knowledgeBase) {
+      const topic = (item.topic || '').toLowerCase();
+      const content = (item.content || '').toLowerCase();
+      if (tokens.some(t => topic.includes(t) || content.includes(t))) {
         return item.content;
       }
     }
 
-    // 10. Greetings
-    if (['hi', 'hello', 'hey', 'namaste', 'start'].some(g => q.startsWith(g))) {
-      return `Hello! 👋 Welcome to **University College of Science, Tumkur**.\nHow can I assist you with **admissions, courses, departments, HODs, fees, hostels, or campus details** today?`;
+    // 🎯 PRIORITY 9: FAQ DATABASE
+    if (faqs && faqs.length > 0) {
+      for (const faq of faqs) {
+        if (faq.question && (q.includes(faq.question.toLowerCase()) || tokens.some(t => faq.question.toLowerCase().includes(t)))) {
+          return `💡 **FAQ:**\n**Q: ${faq.question}**\n\n${faq.answer}`;
+        }
+      }
     }
 
-    // Contextual Fallback
-    return `Thank you for your inquiry regarding "${query}". For specific details, please contact the college admission desk directly at 📞 **${settings?.phone || '0816-2203500'}** or visit https://tumkuruniversity.ac.in`;
+    // 🎯 PRIORITY 10: GREETINGS
+    if (['hi', 'hello', 'hey', 'namaste', 'start'].some(g => q.startsWith(g))) {
+      return `Hello! 👋 How can I assist you with **admissions, courses, department heads, fees, hostels, or campus details** today?`;
+    }
+
+    return `Thank you for your question! For specific queries regarding "${query}", please contact the college helpdesk directly at 📞 **${settings?.phone || '0816-2203500'}** or visit https://tumkuruniversity.ac.in`;
   };
 
   const handleSend = (e?: React.FormEvent, customText?: string) => {
@@ -430,7 +415,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       setMessages((prev) => [...prev, botMessage]);
       setIsTyping(false);
       await logDirectToSupabase(textToSend.trim(), botResponseText);
-    }, 300);
+    }, 250);
   };
 
   const handleOpenAddModal = () => {
@@ -632,7 +617,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
                 type="text" 
                 value={input} 
                 onChange={(e) => setInput(e.target.value)} 
-                placeholder="Ask about admissions, courses, HODs, departments, fees, hostel, sports..." 
+                placeholder="Ask about admissions, courses, department heads, fees, hostel, sports..." 
                 className="flex-1 px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-600 focus:bg-white text-sm md:text-base font-medium outline-none transition-all" 
               />
               <button 
