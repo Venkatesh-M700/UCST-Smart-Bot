@@ -36,7 +36,6 @@ interface ChatbotProps {
   onNavigate?: (route: Route) => void;
 }
 
-// 🌟 Local Storage Keys matched exactly with Pages 🌟
 const STORAGE_KEYS = {
   DEPTS: 'ucs_crud_departments',
   COURSES: 'ucs_courses_data',
@@ -230,10 +229,10 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     }
 
     setWebData({
-      depts: freshDepts.length > 0 ? freshDepts : DEFAULT_DEPTS,
-      courses: freshCourses.length > 0 ? freshCourses : DEFAULT_COURSES,
-      admission: sortNaturally(freshAdmission.length > 0 ? freshAdmission : DEFAULT_ADMISSION),
-      faqs: freshFaqs.length > 0 ? freshFaqs : DEFAULT_FAQS,
+      depts: freshDepts && freshDepts.length > 0 ? freshDepts : DEFAULT_DEPTS,
+      courses: freshCourses && freshCourses.length > 0 ? freshCourses : DEFAULT_COURSES,
+      admission: sortNaturally(freshAdmission && freshAdmission.length > 0 ? freshAdmission : DEFAULT_ADMISSION),
+      faqs: freshFaqs && freshFaqs.length > 0 ? freshFaqs : DEFAULT_FAQS,
       settings: freshSettings,
       knowledge: freshKb
     });
@@ -276,11 +275,11 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     } catch {}
   };
 
-  // 🧠 Absolute Direct Router (Guaranteed Priority Routing) 🧠
+  // 🧠 Absolute Guaranteed Priority Matcher (Direct Zero-Leak Router) 🧠
   const parseAndAnswer = (query: string): string => {
     const q = query.toLowerCase().trim();
 
-    // 1. Direct fetch fresh departments from LocalStorage / State / Defaults
+    // 1. Guaranteed Fresh Department Data
     let activeDepts = DEFAULT_DEPTS;
     try {
       const rawD = localStorage.getItem(STORAGE_KEYS.DEPTS);
@@ -293,7 +292,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       activeDepts = DEFAULT_DEPTS;
     }
 
-    // 2. Direct fetch fresh courses
+    // 2. Guaranteed Fresh Course Data
     let activeCourses = DEFAULT_COURSES;
     try {
       const rawC = localStorage.getItem(STORAGE_KEYS.COURSES);
@@ -306,7 +305,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       activeCourses = DEFAULT_COURSES;
     }
 
-    // 3. Direct fetch fresh admission data
+    // 3. Guaranteed Fresh Admission Data
     let activeAdmission = DEFAULT_ADMISSION;
     try {
       const rawA = localStorage.getItem(STORAGE_KEYS.ADMISSION);
@@ -319,21 +318,21 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       activeAdmission = DEFAULT_ADMISSION;
     }
 
-    // 🎯 1. PRIORITY 1: DEPARTMENTS & HODS (About Page)
-    // Direct matches for: "departments", "our departments", "department", "dept", "hod", "head", "faculty"
-    if (
+    // 🎯 PRIORITY 1: DEPARTMENTS & HODS (Immediate Hard Stop - No FAQ Leak)
+    const isDeptIntent = 
+      q.includes('department') || 
       q.includes('depart') || 
       q.includes('dept') || 
-      q.includes('head') || 
       q.includes('hod') || 
+      q.includes('head') || 
       q.includes('faculty') || 
       q.includes('staff') || 
       q.includes('ramani') || 
       q.includes('shwetha') || 
       q.includes('manjunath') || 
-      q.includes('geetha')
-    ) {
-      // Individual department match
+      q.includes('geetha');
+
+    if (isDeptIntent) {
       for (const d of activeDepts) {
         const dName = (d.name || '').toLowerCase();
         const dHead = (d.head || '').toLowerCase();
@@ -347,21 +346,21 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
           return `🏛️ **${d.name} (About Page):**\n• **Head of Department (HOD):** ${d.head}\n• **Overview:** ${d.description || 'Offering modern lab education and experienced faculty.'}`;
         }
       }
-      // Return full list of departments from About.tsx
       return `🏛️ **Our Departments & Heads (From About Page):**\n\n${activeDepts.map((d: any, idx: number) => `${idx + 1}. **${d.name}**\n   👤 Head: **${d.head}**\n   ${d.description || ''}`).join('\n\n')}`;
     }
 
-    // 🎯 2. PRIORITY 2: ADMISSION PROCESS & STEPS (Admission Page Steps 1 to 7)
-    if (
+    // 🎯 PRIORITY 2: ADMISSION PROCESS & STEPS (Immediate Hard Stop)
+    const isAdmissionIntent = 
       q.includes('admi') || 
       q.includes('apply') || 
       q.includes('seat') || 
       q.includes('process') || 
       q.includes('steps') || 
-      q.includes('procedure') || 
-      q.includes('counselling') ||
-      q.includes('how to join')
-    ) {
+      q.includes('counselling') || 
+      q.includes('procedure') ||
+      q.includes('how to join');
+
+    if (isAdmissionIntent) {
       const processItems = activeAdmission.filter(a => {
         const cat = (a.category || '').toLowerCase();
         const title = (a.title || '').toLowerCase();
@@ -374,7 +373,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       }
     }
 
-    // 🎯 3. PRIORITY 3: ELIGIBILITY CRITERIA ONLY
+    // 🎯 PRIORITY 3: ELIGIBILITY CRITERIA ONLY
     if (q.includes('eligib') || q.includes('criteria') || q.includes('qualification')) {
       const eligItems = activeAdmission.filter(a => (a.category || '').toLowerCase() === 'eligibility');
       if (eligItems.length > 0) {
@@ -383,7 +382,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       return `📋 **Eligibility Criteria:**\n• **BCA:** 10+2 / PUC Pass with Mathematics / Computer Science / Statistics.\n• **B.Sc:** 10+2 / PUC Science Stream.`;
     }
 
-    // 🎯 4. PRIORITY 4: FEE STRUCTURE ONLY
+    // 🎯 PRIORITY 4: FEE STRUCTURE ONLY
     if (q.includes('fee') || q.includes('cost') || q.includes('scholar') || q.includes('ssp') || q.includes('nsp') || q.includes('amount') || q.includes('payment')) {
       const feeItems = activeAdmission.filter(a => (a.category || '').toLowerCase() === 'fees');
       let feeReply = `💰 **Fee Structure (From Admission Portal):**\n\n`;
@@ -394,7 +393,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       return feeReply;
     }
 
-    // 🎯 5. PRIORITY 5: SPECIFIC BCA COURSES (Strict BCA vs Data Science)
+    // 🎯 PRIORITY 5: SPECIFIC BCA COURSES (Strict BCA vs Data Science)
     if (q.includes('data science') || q.includes('datascience') || q.includes('bca ds')) {
       const bcaDs = activeCourses.find(c => (c.name || '').toLowerCase().includes('data science') || (c.code || '').toLowerCase().includes('ds'));
       if (bcaDs) {
@@ -421,12 +420,12 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       }
     }
 
-    // 🎯 6. PRIORITY 6: ALL COURSES LIST
+    // 🎯 PRIORITY 6: ALL COURSES LIST
     if (q.includes('cours') || q.includes('branch') || q.includes('program') || q.includes('degre')) {
       return `📚 **Offered Courses & Combinations (From Courses Page):**\n\n${activeCourses.map((c: any) => `• **${c.name}** (${c.duration || '3 Years'})\n  Eligibility: ${c.eligibility}\n  Fees: *${c.fees}* | Seats: ${c.seats}\n  ${c.description || ''}`).join('\n\n')}`;
     }
 
-    // 🎯 7. PRIORITY 7: IMPORTANT DATES
+    // 🎯 PRIORITY 7: IMPORTANT DATES
     if (q.includes('date') || q.includes('schedule') || q.includes('deadline')) {
       const dateItems = activeAdmission.filter(a => (a.category || '').toLowerCase() === 'important_dates');
       if (dateItems.length > 0) {
@@ -434,20 +433,20 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       }
     }
 
-    // 🎯 8. PRIORITY 8: CONTACT DETAILS
+    // 🎯 PRIORITY 8: CONTACT DETAILS
     if (q.includes('contact') || q.includes('phone') || q.includes('call') || q.includes('email') || q.includes('address') || q.includes('locat')) {
       return `📍 **Campus Contact Details (From Contact Page):**\n• **Institution:** ${webData.settings.college_name}\n• **Address:** ${webData.settings.address}\n• **Phone:** 📞 **${webData.settings.phone || '0816-2203500'}**\n• **Email:** 📧 **${webData.settings.email}**\n• **Website:** 🌐 ${webData.settings.website}`;
     }
 
-    // 🎯 9. PRIORITY 9: FAQ EXACT QUESTION MATCH (Search in question ONLY)
+    // 🎯 PRIORITY 9: FAQ EXACT QUESTION MATCH (Matches Question String Only, NEVER Answer Body)
     for (const f of webData.faqs) {
       const fQ = (f.question || '').toLowerCase();
-      if (q === fQ || (q.length > 10 && fQ.includes(q)) || (fQ.length > 10 && q.includes(fQ))) {
+      if (q === fQ || (q.length > 15 && fQ.includes(q)) || (fQ.length > 15 && q.includes(fQ))) {
         return `💡 **FAQ - ${f.question}:**\n\n${f.answer}`;
       }
     }
 
-    // 🎯 10. PRIORITY 10: TRAINED AI KNOWLEDGE BASE
+    // 🎯 PRIORITY 10: TRAINED AI KNOWLEDGE BASE
     for (const kb of webData.knowledge) {
       const topic = (kb.topic || '').toLowerCase();
       if (q.includes(topic)) {
