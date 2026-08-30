@@ -36,7 +36,6 @@ interface ChatbotProps {
   onNavigate?: (route: Route) => void;
 }
 
-// 🌟 Exact Local Storage Keys from About.tsx, Courses.tsx, Admission.tsx, FAQ.tsx, Contact.tsx 🌟
 const STORAGE_KEYS = {
   DEPTS: 'ucs_crud_departments',
   COURSES: 'ucs_courses_data',
@@ -270,15 +269,15 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     } catch {}
   };
 
-  // 🧠 Absolute Multi-Page Intent Engine with Strict Priority 🧠
+  // 🧠 Absolute Direct Router (Prevents FAQ Overlap) 🧠
   const parseAndAnswer = (query: string): string => {
     const q = query.toLowerCase().trim();
     const depts = (webData.depts && webData.depts.length > 0) ? webData.depts : DEFAULT_DEPTS;
 
-    // 🎯 1. CHECK DEPARTMENTS & HODs FIRST (Priority 1: "departments", "our departments", "hod", "head", "faculty")
-    const isDeptQuery = q.includes('depart') || q.includes('dept') || q.includes('head') || q.includes('hod') || q.includes('faculty') || q.includes('staff') || q.includes('professor') || q.includes('ramani') || q.includes('shwetha') || q.includes('manjunath') || q.includes('geetha');
+    // 🎯 1. PRIORITY 1: DEPARTMENTS & HODS (About Page)
+    const isDeptQuery = q.includes('depart') || q.includes('dept') || q.includes('head') || q.includes('hod') || q.includes('faculty') || q.includes('staff') || q.includes('ramani') || q.includes('shwetha') || q.includes('manjunath') || q.includes('geetha');
     if (isDeptQuery) {
-      // Individual department search
+      // Individual department match
       for (const d of depts) {
         const dName = (d.name || '').toLowerCase();
         const dHead = (d.head || '').toLowerCase();
@@ -290,14 +289,14 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
           (q.includes('math') && dName.includes('math')) ||
           (q.includes('chem') && dName.includes('chem'))
         ) {
-          return `🏛️ **${d.name} (About Page):**\n• **Head of Department (HOD):** ${d.head}\n• **Overview:** ${d.description || 'Offering advanced lab education and experienced faculty.'}`;
+          return `🏛️ **${d.name} (About Page):**\n• **Head of Department (HOD):** ${d.head}\n• **Overview:** ${d.description || 'Offering modern lab education and experienced faculty.'}`;
         }
       }
-      // Return all departments from About.tsx
-      return `🏛️ **Academic Departments at UCS Tumkur (Total: ${depts.length}):**\n\n${depts.map((d: any, idx: number) => `${idx + 1}. **${d.name}**\n   👤 Head: **${d.head}**\n   ${d.description || ''}`).join('\n\n')}`;
+      // Full departments overview
+      return `🏛️ **Our Departments & Heads (From About Page):**\n\n${depts.map((d: any, idx: number) => `${idx + 1}. **${d.name}**\n   👤 Head: **${d.head}**\n   ${d.description || ''}`).join('\n\n')}`;
     }
 
-    // 🎯 2. CHECK ADMISSION PROCESS (Priority 2: Steps 1 to 7)
+    // 🎯 2. PRIORITY 2: ADMISSION PROCESS (Admission Page Steps 1-7)
     const isProcessQuery = q.includes('process') || q.includes('steps') || q.includes('procedure') || q.includes('how to apply') || q.includes('how do i apply');
     if (isProcessQuery || q === 'admission' || q === 'admissions') {
       const processItems = webData.admission.filter(a => {
@@ -312,8 +311,8 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       }
     }
 
-    // 🎯 3. CHECK ELIGIBILITY CRITERIA ONLY
-    const isEligibilityQuery = q.includes('eligib') || q.includes('criteria') || q.includes('qualification') || q.includes('requirement');
+    // 🎯 3. PRIORITY 3: ELIGIBILITY CRITERIA
+    const isEligibilityQuery = q.includes('eligib') || q.includes('criteria') || q.includes('qualification');
     if (isEligibilityQuery) {
       const eligItems = webData.admission.filter(a => (a.category || '').toLowerCase() === 'eligibility');
       if (eligItems.length > 0) {
@@ -322,7 +321,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       return `📋 **Eligibility Criteria:**\n• **BCA:** 10+2 / PUC Pass with Mathematics / Computer Science / Statistics.\n• **B.Sc:** 10+2 / PUC Science Stream.`;
     }
 
-    // 🎯 4. CHECK FEE STRUCTURE ONLY
+    // 🎯 4. PRIORITY 4: FEE STRUCTURE
     const isFeeQuery = q.includes('fee') || q.includes('cost') || q.includes('scholar') || q.includes('ssp') || q.includes('nsp') || q.includes('amount') || q.includes('payment');
     if (isFeeQuery && !q.includes('bca') && !q.includes('bsc')) {
       const feeItems = webData.admission.filter(a => (a.category || '').toLowerCase() === 'fees');
@@ -334,7 +333,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       return feeReply;
     }
 
-    // 🎯 5. CHECK SPECIFIC COURSES (BCA vs BCA Data Science vs B.Sc)
+    // 🎯 5. PRIORITY 5: SPECIFIC BCA COURSES (Strict BCA vs Data Science Distinction)
     if (q.includes('data science') || q.includes('datascience') || q.includes('bca ds')) {
       const bcaDs = webData.courses.find(c => {
         const name = (c.name || '').toLowerCase();
@@ -349,9 +348,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       const pureBca = webData.courses.find(c => {
         const name = (c.name || '').toLowerCase();
         const code = (c.code || '').toLowerCase();
-        const isBca = code === 'bca' || name.includes('bachelor of computer applications') || name.startsWith('bca');
-        const isDs = name.includes('data science') || name.includes('datascience') || code.includes('ds');
-        return isBca && !isDs;
+        return (code === 'bca' || name.includes('bachelor of computer applications')) && !name.includes('data science');
       }) || webData.courses[0];
 
       if (pureBca) {
@@ -359,7 +356,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       }
     }
 
-    if (q.includes('bsc') || q.includes('b.sc') || q.includes('science')) {
+    if (q.includes('bsc') || q.includes('b.sc')) {
       const bsc = webData.courses.find(c => {
         const name = (c.name || '').toLowerCase();
         const code = (c.code || '').toLowerCase();
@@ -370,14 +367,14 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       }
     }
 
-    // 🎯 6. ALL COURSES LIST
-    const isCourse = q.includes('cours') || q.includes('branch') || q.includes('program') || q.includes('degre') || q.includes('combinations');
+    // 🎯 6. PRIORITY 6: COURSES LIST
+    const isCourse = q.includes('cours') || q.includes('branch') || q.includes('program') || q.includes('degre');
     if (isCourse) {
       return `📚 **Offered Courses & Combinations (From Courses Page):**\n\n${webData.courses.map((c: any) => `• **${c.name}** (${c.duration || '3 Years'})\n  Eligibility: ${c.eligibility}\n  Fees: *${c.fees}* | Seats: ${c.seats}\n  ${c.description || ''}`).join('\n\n')}`;
     }
 
-    // 🎯 7. IMPORTANT DATES
-    const isDatesQuery = q.includes('date') || q.includes('schedule') || q.includes('deadline') || q.includes('last date');
+    // 🎯 7. PRIORITY 7: IMPORTANT DATES
+    const isDatesQuery = q.includes('date') || q.includes('schedule') || q.includes('deadline');
     if (isDatesQuery) {
       const dateItems = webData.admission.filter(a => (a.category || '').toLowerCase() === 'important_dates');
       if (dateItems.length > 0) {
@@ -385,24 +382,23 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       }
     }
 
-    // 🎯 8. CONTACT & CAMPUS DETAILS
-    const isContact = q.includes('contact') || q.includes('phone') || q.includes('call') || q.includes('email') || q.includes('address') || q.includes('locat') || q.includes('help') || q.includes('website');
+    // 🎯 8. PRIORITY 8: CONTACT DETAILS
+    const isContact = q.includes('contact') || q.includes('phone') || q.includes('call') || q.includes('email') || q.includes('address') || q.includes('locat');
     if (isContact) {
       return `📍 **Campus Contact Details (From Contact Page):**\n• **Institution:** ${webData.settings.college_name}\n• **Address:** ${webData.settings.address}\n• **Phone:** 📞 **${webData.settings.phone || '0816-2203500'}**\n• **Email:** 📧 **${webData.settings.email}**\n• **Website:** 🌐 ${webData.settings.website}`;
     }
 
-    // 🎯 9. STRICT FAQ MATCHING (Exact question check)
+    // 🎯 9. PRIORITY 9: FAQ EXACT QUESTION MATCH (Search in question ONLY)
     for (const f of webData.faqs) {
       const fQ = (f.question || '').toLowerCase();
-      if (q === fQ || q.includes(fQ) || fQ.includes(q)) {
+      if (q === fQ || q.includes(fQ) || (fQ.length > 10 && fQ.includes(q))) {
         return `💡 **FAQ - ${f.question}:**\n\n${f.answer}`;
       }
     }
 
-    // 🎯 10. AI KNOWLEDGE BASE
+    // 🎯 10. PRIORITY 10: TRAINED AI KNOWLEDGE BASE
     for (const kb of webData.knowledge) {
       const topic = (kb.topic || '').toLowerCase();
-      const content = (kb.content || '').toLowerCase();
       if (q.includes(topic)) {
         return kb.content;
       }
