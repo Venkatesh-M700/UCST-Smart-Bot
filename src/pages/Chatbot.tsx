@@ -13,8 +13,7 @@ import {
   Edit2,
   Trash2,
   X,
-  ShieldCheck,
-  MessageSquareQuote
+  ShieldCheck
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
@@ -394,7 +393,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-2 sm:px-4 md:px-6 py-4 space-y-4">
+    <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 py-2 flex flex-col h-[calc(100vh-130px)] min-h-[580px]">
       
       {isPromptModalOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -424,17 +423,17 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
         </div>
       )}
 
-      {/* 🌟 Full Width Responsive Chat Box 🌟 */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col overflow-hidden h-[82vh] md:h-[84vh] w-full">
+      {/* 🌟 Full Screen Height & Full Width Chat Container 🌟 */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col overflow-hidden flex-1 w-full">
         
-        {/* Top Header Bar */}
-        <div className="bg-gray-50/90 px-4 md:px-6 py-3.5 border-b border-gray-200/80 flex items-center justify-between">
+        {/* Compact Header Bar */}
+        <div className="bg-gray-50/90 px-4 md:px-6 py-3 border-b border-gray-200/80 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-primary-600 text-white flex items-center justify-center shadow-md">
-              <Bot size={22} />
+            <div className="h-9 w-9 rounded-xl bg-primary-600 text-white flex items-center justify-center shadow-md">
+              <Bot size={20} />
             </div>
             <div>
-              <h2 className="text-sm md:text-base font-black text-slate-800 flex items-center gap-1.5">
+              <h2 className="text-sm md:text-base font-black text-slate-800 flex items-center gap-1.5 leading-tight">
                 <span>UCS AI Assistant</span>
                 <span className="text-[10px] bg-primary-100 text-primary-700 font-bold px-2 py-0.5 rounded-full">v2.4</span>
               </h2>
@@ -461,20 +460,24 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
               className="p-2 text-slate-400 hover:text-slate-600 hover:bg-gray-100 rounded-xl cursor-pointer transition-colors"
               title="Reset Conversation"
             >
-              <RefreshCw size={18} />
+              <RefreshCw size={17} />
             </button>
           </div>
         </div>
 
-        {/* Chat Transcript Stream */}
+        {/* 🌟 Chat Transcripts - Expands across full width and height with zero clipping 🌟 */}
         <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-4 bg-white">
           {messages.map((msg) => (
-            <div key={msg.id} className={`flex gap-3 max-w-[95%] md:max-w-[85%] ${msg.sender === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}>
-              <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs ${msg.sender === 'user' ? 'bg-primary-600 text-white' : 'bg-teal-600 text-white'}`}>
-                {msg.sender === 'user' ? <User size={18} /> : <Bot size={18} />}
-              </div>
-              <div className="space-y-1">
-                <div className={`p-4 rounded-2xl shadow-xs ${msg.sender === 'user' ? 'bg-primary-600 text-white rounded-tr-none font-medium' : 'bg-gray-50/90 text-slate-800 border border-gray-200/80 rounded-tl-none'}`}>
+            <div key={msg.id} className={`flex gap-3 w-full ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+              
+              {msg.sender === 'bot' && (
+                <div className="h-9 w-9 rounded-xl bg-teal-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-1">
+                  <Bot size={18} />
+                </div>
+              )}
+
+              <div className={`space-y-1 ${msg.sender === 'user' ? 'max-w-[85%] md:max-w-[70%]' : 'max-w-[95%] md:max-w-[88%]'}`}>
+                <div className={`p-4 md:p-5 rounded-2xl shadow-xs ${msg.sender === 'user' ? 'bg-primary-600 text-white rounded-tr-none font-medium' : 'bg-gray-50/90 text-slate-800 border border-gray-200/80 rounded-tl-none'}`}>
                   {msg.sender === 'user' ? (
                     <p className="leading-relaxed text-sm md:text-base">{msg.text}</p>
                   ) : (
@@ -483,11 +486,18 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
                 </div>
                 <p className={`text-[11px] text-slate-400 px-1 font-semibold ${msg.sender === 'user' ? 'text-right' : 'text-left'}`}>{msg.timestamp}</p>
               </div>
+
+              {msg.sender === 'user' && (
+                <div className="h-9 w-9 rounded-xl bg-primary-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-1">
+                  <User size={18} />
+                </div>
+              )}
+
             </div>
           ))}
 
           {isTyping && (
-            <div className="flex gap-3 mr-auto items-center">
+            <div className="flex gap-3 justify-start items-center">
               <div className="h-9 w-9 rounded-xl bg-teal-600 text-white flex items-center justify-center"><Bot size={18} /></div>
               <div className="bg-gray-50 border border-gray-200 p-3.5 rounded-2xl rounded-tl-none flex items-center gap-1.5">
                 <span className="h-2 w-2 bg-teal-600 rounded-full animate-bounce [animation-delay:-0.3s]" />
@@ -500,7 +510,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
         </div>
 
         {/* Quick Prompts Bar */}
-        <div className="px-4 py-2.5 bg-gray-50/80 border-t border-gray-100 flex items-center gap-2 overflow-x-auto no-scrollbar">
+        <div className="px-4 py-2 bg-gray-50/80 border-t border-gray-100 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0">
           <span className="text-xs font-bold text-slate-400 uppercase shrink-0 flex items-center gap-1">
             <Sparkles size={14} className="text-amber-500" />
             <span>Ask:</span>
@@ -511,7 +521,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
               <button 
                 type="button" 
                 onClick={() => handleSend(undefined, p.prompt)} 
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-primary-50 hover:text-primary-700 text-slate-700 border border-gray-200 rounded-xl text-xs md:text-sm font-bold cursor-pointer transition-colors shadow-2xs"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-primary-50 hover:text-primary-700 text-slate-700 border border-gray-200 rounded-xl text-xs md:text-sm font-bold cursor-pointer transition-colors shadow-2xs"
               >
                 {getPromptIcon(idx)}
                 <span>{p.label}</span>
@@ -527,14 +537,14 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
           ))}
 
           {isAdminState && (
-            <button type="button" onClick={handleOpenAddModal} className="px-2.5 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold shrink-0 cursor-pointer shadow-xs">
+            <button type="button" onClick={handleOpenAddModal} className="px-2.5 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold shrink-0 cursor-pointer shadow-xs">
               <Plus size={14} />
             </button>
           )}
         </div>
 
         {/* Input Chat Box */}
-        <div className="p-3.5 md:p-4 bg-white border-t border-gray-100">
+        <div className="p-3 md:p-4 bg-white border-t border-gray-100 shrink-0">
           <form onSubmit={(e) => handleSend(e)} className="flex items-center gap-2">
             <input 
               type="text" 
