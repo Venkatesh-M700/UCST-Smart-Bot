@@ -54,7 +54,7 @@ const BASELINE_DATA = {
     { name: 'Department of Chemistry & Biochemistry', head: 'Dr. Geetha S.', description: 'Engaged in organic synthesis, environmental chemistry, and pharmaceutical analysis.' }
   ],
   courses: [
-    { name: 'Bachelor of Computer Applications (BCA)', code: 'BCA', duration: '3 Years (6 Semesters)', eligibility: '10+2 / PUC Pass with Mathematics, Statistics, or Computer Science', fees: 'Rs. 25,000 / Year', seats: '60 Seats', description: 'Comprehensive curriculum in programming, web development, data structures, cloud computing, and software engineering.' },
+    { name: 'Bachelor of Computer Applications (BCA)', code: 'BCA', duration: '3 Years (6 Semesters)', eligibility: '10+2 / PUC Pass with Mathematics, Statistics, or Computer Science', fees: 'Rs. 25,000 / Year', seats: '60 Seats', description: 'Comprehensive curriculum in programming, web development, data structures, and software engineering.' },
     { name: 'BCA (Data Science & AI)', code: 'BCA-DS', duration: '3 Years (6 Semesters)', eligibility: '10+2 / PUC with Mathematics/Statistics', fees: 'Rs. 50,000 / Year', seats: '40 Seats', description: 'Specialized program covering Artificial Intelligence, Big Data, and Machine Learning.' },
     { name: 'Bachelor of Science (B.Sc)', code: 'B.Sc (PMCs / CBZ)', duration: '3 Years (6 Semesters)', eligibility: '10+2 / PUC Science Stream', fees: 'Rs. 18,000 / Year', seats: '120 Seats', description: 'Physical and biological sciences with modern lab practicals.' }
   ],
@@ -84,9 +84,11 @@ const BASELINE_DATA = {
 const DEFAULT_PROMPTS: QuickPrompt[] = [
   { id: '1', label: 'Admission Process', prompt: 'Tell me about admission process' },
   { id: '2', label: 'BCA Course Details', prompt: 'Tell me about BCA course' },
-  { id: '3', label: 'Fee Structure', prompt: 'What is the fee structure?' },
-  { id: '4', label: 'Department Heads', prompt: 'Who are the department HODs?' },
+  { id: '3', label: 'Department Heads', prompt: 'How many departments and who are the HODs?' },
+  { id: '4', label: 'Contact Helpdesk', prompt: 'How to contact college office?' },
 ];
+
+const STOP_WORDS = new Set(['how', 'what', 'when', 'where', 'which', 'who', 'why', 'can', 'the', 'and', 'for', 'are', 'is', 'tell', 'give', 'many', 'much', 'about', 'show', 'list', 'please', 'college', 'ucs', 'tumkur', 'all', 'any', 'get', 'details', 'info', 'information']);
 
 function FormattedText({ text }: { text: string }) {
   const parseContent = (input: string) => {
@@ -275,30 +277,32 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     } catch {}
   };
 
-  // 🧠 Strict Distinction & Semantic Router 🧠
+  // 🧠 High-Precision Multi-Page Intelligent Router 🧠
   const parseAndAnswer = (query: string): string => {
     const q = query.toLowerCase().trim();
-    const tokens = q.replace(/[^a-zA-Z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length >= 2);
+    const rawTokens = q.replace(/[^a-zA-Z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length >= 2);
+    const meaningfulTokens = rawTokens.filter(t => !STOP_WORDS.has(t));
 
-    // 🎯 1. CHECK DEPARTMENT HEADS / HODs FIRST (About Page)
-    const isDeptHOD = q.includes('head') || q.includes('hod') || q.includes('faculty') || q.includes('ramani') || q.includes('shwetha') || q.includes('manjunath') || q.includes('geetha');
-    if (isDeptHOD) {
+    // 🎯 1. CHECK DEPARTMENTS / HODs / FACULTY (About Page)
+    const isDeptQuery = q.includes('dept') || q.includes('department') || q.includes('head') || q.includes('hod') || q.includes('faculty') || q.includes('staff') || q.includes('professor') || q.includes('ramani') || q.includes('shwetha') || q.includes('manjunath') || q.includes('geetha');
+    if (isDeptQuery) {
+      // Individual department search
       for (const d of webData.depts) {
         const dName = (d.name || '').toLowerCase();
         const dHead = (d.head || '').toLowerCase();
         
         if (
           (dHead && q.includes(dHead)) ||
-          (q.includes('bca') && (dName.includes('bca') || dName.includes('computer'))) ||
           (q.includes('computer') && dName.includes('computer')) ||
-          (q.includes('physic') && dName.includes('physic')) ||
+          (q.includes('physics') && dName.includes('physics')) ||
           (q.includes('math') && dName.includes('math')) ||
           (q.includes('chem') && dName.includes('chem'))
         ) {
-          return `🏛️ **${d.name} (About Page):**\n• **Head of Department (HOD):** ${d.head}\n• **Overview:** ${d.description || 'Offering modern lab education and experienced faculty.'}`;
+          return `🏛️ **${d.name} (About Page):**\n• **Head of Department (HOD):** ${d.head}\n• **Overview:** ${d.description || 'Offering advanced lab education and experienced faculty.'}`;
         }
       }
-      return `🏛️ **Academic Departments & HODs (About Page):**\n\n${webData.depts.map((d: any) => `• **${d.name}**\n  👤 Head: **${d.head}**\n  ${d.description || ''}`).join('\n\n')}`;
+      // General department list / count query (e.g. "how many departments")
+      return `🏛️ **Academic Departments at UCS Tumkur (Total: ${webData.depts.length}):**\n\n${webData.depts.map((d: any, idx: number) => `${idx + 1}. **${d.name}**\n   👤 Head: **${d.head}**\n   ${d.description || ''}`).join('\n\n')}`;
     }
 
     // 🎯 2. CHECK ADMISSION PROCESS ONLY (Steps 1 to 7 in Order)
@@ -338,7 +342,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       return feeReply;
     }
 
-    // 🎯 5. CHECK SPECIFIC COURSES: BCA vs BCA DATA SCIENCE (Strict Separation)
+    // 🎯 5. CHECK SPECIFIC COURSES: BCA vs BCA DATA SCIENCE
     if (q.includes('data science') || q.includes('datascience') || q.includes('bca ds')) {
       const bcaDs = webData.courses.find(c => {
         const name = (c.name || '').toLowerCase();
@@ -349,7 +353,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       }
     }
 
-    // Pure BCA Inquiry (Matches BCA only, ignores Data Science)
+    // Pure BCA
     if (q.includes('bca') || q.includes('bachelor of computer applications')) {
       const pureBca = webData.courses.find(c => {
         const name = (c.name || '').toLowerCase();
@@ -364,7 +368,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       }
     }
 
-    // Specific B.Sc Inquiry
+    // Specific B.Sc
     if (q.includes('bsc') || q.includes('b.sc') || q.includes('bachelor of science')) {
       const bsc = webData.courses.find(c => {
         const name = (c.name || '').toLowerCase();
@@ -397,10 +401,13 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
       return `📍 **Campus Contact Details (From Contact Page):**\n• **Institution:** ${webData.settings.college_name}\n• **Address:** ${webData.settings.address}\n• **Phone:** 📞 **${webData.settings.phone}**\n• **Email:** 📧 **${webData.settings.email}**\n• **Website:** 🌐 ${webData.settings.website}`;
     }
 
-    // 🎯 9. FAQ SEARCH
+    // 🎯 9. STRICT FAQ SEARCH (Requires at least 2 non-stopword tokens or whole question match)
     for (const f of webData.faqs) {
       const fQ = (f.question || '').toLowerCase();
-      if (tokens.some(t => fQ.includes(t) && t.length >= 3) || q.includes(fQ)) {
+      const fQTokens = fQ.replace(/[^a-zA-Z0-9\s]/g, ' ').split(/\s+/).filter(w => !STOP_WORDS.has(w) && w.length >= 3);
+      const matches = meaningfulTokens.filter(t => fQTokens.some(fqT => fqT.includes(t) || t.includes(fqT)));
+
+      if (matches.length >= 2 || q.includes(fQ) || fQ.includes(q)) {
         return `💡 **FAQ - ${f.question}:**\n\n${f.answer}`;
       }
     }
@@ -409,7 +416,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
     for (const kb of webData.knowledge) {
       const topic = (kb.topic || '').toLowerCase();
       const content = (kb.content || '').toLowerCase();
-      if (q.includes(topic) || tokens.some(t => topic.includes(t) || content.includes(t))) {
+      if (q.includes(topic) || (meaningfulTokens.length > 0 && meaningfulTokens.every(t => topic.includes(t) || content.includes(t)))) {
         return kb.content;
       }
     }
