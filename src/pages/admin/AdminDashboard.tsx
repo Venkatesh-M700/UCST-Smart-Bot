@@ -20,7 +20,13 @@ import {
   RefreshCw, 
   ShieldCheck, 
   Megaphone,
-  Clock
+  Clock,
+  Bold,
+  Italic,
+  List,
+  ListOrdered,
+  Eye,
+  Eraser
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
@@ -32,12 +38,12 @@ interface AdminDashboardProps {
 }
 
 const DEFAULT_AI_KNOWLEDGE = [
-  { id: 'kn-1', topic: 'NSS & Activities', content: 'UCS Tumkur has active NSS and Youth Red Cross wings encouraging students to participate in community service, tree plantation, and annual special blood donation camps.' },
-  { id: 'kn-2', topic: 'Courses Offered', content: 'We offer premier programs: BCA (Bachelor of Computer Applications), B.Sc (PMCs, CBZ, Electronics, Biotechnology) and M.Sc programs with top-tier faculty and lab facilities.' },
-  { id: 'kn-3', topic: 'Fees & Scholarships', content: 'Tuition fees follow Karnataka state government norms (Approx Rs. 25,000/year for BCA). Post-matric SSP, NSP scholarships and category fee concessions are available.' },
-  { id: 'kn-4', topic: 'Hostel Facilities', content: 'UCS Tumkur provides secure hostel accommodation with hygienic mess facilities, 24/7 security, and study halls for both boys and girls near the campus.' },
-  { id: 'kn-5', topic: 'College Helpdesk & Contact', content: '📍 Address: BH Road, Tumkur - 572103\n📞 Phone: 0816-2203500\n📧 Email: ucscience@tumkuruniversity.ac.in\n🌐 Website: https://tumkuruniversity.ac.in' },
-  { id: 'kn-6', topic: 'Sports & Gymnasium', content: 'UCS Tumkur features dedicated sports facilities including cricket, volleyball, kabaddi grounds, indoor badminton, table tennis, and a modern student gym.' }
+  { id: 'kn-1', topic: 'NSS & Activities', content: '**UCS Tumkur** has active **NSS** and *Youth Red Cross* wings encouraging students to participate in community service, tree plantation, and annual special blood donation camps.' },
+  { id: 'kn-2', topic: 'Courses Offered', content: 'We offer premier programs:\n• **BCA** (Bachelor of Computer Applications)\n• **B.Sc** (PMCs, CBZ, Electronics, Biotechnology)\n• **M.Sc** programs with top-tier faculty and lab facilities.' },
+  { id: 'kn-3', topic: 'Fees & Scholarships', content: 'Tuition fees follow **Karnataka state government norms** (Approx *Rs. 25,000/year* for BCA). Post-matric SSP, NSP scholarships and category fee concessions are available.' },
+  { id: 'kn-4', topic: 'Hostel Facilities', content: '**UCS Tumkur** provides secure hostel accommodation with hygienic mess facilities, 24/7 security, and study halls for both boys and girls near the campus.' },
+  { id: 'kn-5', topic: 'College Helpdesk & Contact', content: '📍 **Address:** BH Road, Tumkur - 572103\n📞 **Phone:** 0816-2203500\n📧 **Email:** ucscience@tumkuruniversity.ac.in\n🌐 **Website:** https://tumkuruniversity.ac.in' },
+  { id: 'kn-6', topic: 'Sports & Gymnasium', content: '**UCS Tumkur** features dedicated sports facilities including cricket, volleyball, kabaddi grounds, indoor badminton, table tennis, and a modern student gym.' }
 ];
 
 const CHAT_LOGS_KEY = 'ucs_admin_chat_logs';
@@ -47,6 +53,28 @@ const ANNOUNCEMENT_STORAGE_KEY = 'ucs_announcements_data';
 
 type TabType = 'dashboard' | 'announcements' | 'knowledge' | 'settings_logo' | 'students' | 'chat_history' | 'messages';
 
+// 🌟 Simple Markdown Parser for Preview & Lists 🌟
+function FormattedText({ text }: { text: string }) {
+  const formatText = (input: string) => {
+    let formatted = input.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    formatted = formatted.replace(/_(.*?)_/g, '<em>$1</em>');
+    return formatted;
+  };
+
+  return (
+    <div className="space-y-1 text-slate-700">
+      {text.split('\n').map((line, i) => (
+        <p 
+          key={i} 
+          className="leading-relaxed font-normal" 
+          dangerouslySetInnerHTML={{ __html: formatText(line) || '&nbsp;' }} 
+        />
+      ))}
+    </div>
+  );
+}
+
 export function AdminDashboard({ onNavigate, onSignOut }: AdminDashboardProps) {
   const { logout, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
@@ -54,6 +82,7 @@ export function AdminDashboard({ onNavigate, onSignOut }: AdminDashboardProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [students, setStudents] = useState<any[]>([]);
   const [chatLogs, setChatLogs] = useState<any[]>(() => {
@@ -88,6 +117,7 @@ export function AdminDashboard({ onNavigate, onSignOut }: AdminDashboardProps) {
   const [knTopic, setKnTopic] = useState('');
   const [knContent, setKnContent] = useState('');
   const [editingKnId, setEditingKnId] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   const [dbSettingsId, setDbSettingsId] = useState<any>(null);
   const [collegeSettings, setCollegeSettings] = useState({
@@ -197,6 +227,40 @@ export function AdminDashboard({ onNavigate, onSignOut }: AdminDashboardProps) {
   const showToast = (msg: string) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(''), 3000);
+  };
+
+  // 🌟 Formatting Helpers for Textarea 🌟
+  const applyFormatting = (prefix: string, suffix: string = '') => {
+    if (!textareaRef.current) return;
+    const el = textareaRef.current;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const text = knContent;
+    const selectedText = text.substring(start, end) || 'text';
+    const replacement = `${prefix}${selectedText}${suffix}`;
+    
+    const newContent = text.substring(0, start) + replacement + text.substring(end);
+    setKnContent(newContent);
+
+    setTimeout(() => {
+      el.focus();
+      el.setSelectionRange(start + prefix.length, start + prefix.length + selectedText.length);
+    }, 0);
+  };
+
+  const insertList = (type: 'bullet' | 'number') => {
+    if (!textareaRef.current) return;
+    const el = textareaRef.current;
+    const start = el.selectionStart;
+    const text = knContent;
+    const prefix = type === 'bullet' ? '\n• ' : '\n1. ';
+    const newContent = text.substring(0, start) + prefix + text.substring(start);
+    setKnContent(newContent);
+
+    setTimeout(() => {
+      el.focus();
+      el.setSelectionRange(start + prefix.length, start + prefix.length);
+    }, 0);
   };
 
   // 🌟 AI Knowledge Handlers 🌟
@@ -467,7 +531,7 @@ export function AdminDashboard({ onNavigate, onSignOut }: AdminDashboardProps) {
             </div>
             <div className="text-xs text-slate-700 bg-blue-50/70 p-3 rounded-xl border border-blue-100/80 leading-relaxed">
               <span className="text-emerald-700 mr-2 font-black uppercase text-[10px]">AI Assistant Reply:</span>
-              {chat.botReply}
+              <FormattedText text={chat.botReply} />
             </div>
           </div>
         ))
@@ -504,10 +568,9 @@ export function AdminDashboard({ onNavigate, onSignOut }: AdminDashboardProps) {
 
       {isSidebarOpen && <div onClick={() => setIsSidebarOpen(false)} className="fixed inset-0 bg-black/40 z-30 md:hidden backdrop-blur-sm" />}
 
-      {/* 🌟 Sidebar Navigation 🌟 */}
+      {/* Sidebar Navigation */}
       <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 p-4 md:p-5 flex flex-col justify-between shadow-lg md:shadow-none transition-transform duration-300 md:static md:translate-x-0 h-full md:min-h-screen ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         
-        {/* Top Header & Navigation */}
         <div className="flex flex-col space-y-4">
           <div className="flex items-center gap-3 p-2 bg-blue-50/80 border border-blue-100 rounded-2xl shrink-0">
             {collegeSettings.logo_url ? (
@@ -540,20 +603,19 @@ export function AdminDashboard({ onNavigate, onSignOut }: AdminDashboardProps) {
             </button>
             <button onClick={() => { setActiveTab('students'); setIsSidebarOpen(false); }} className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'students' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}`}>
               <div className="flex items-center gap-3"><Users size={16} /> <span>Registered Students</span></div>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${activeTab === 'students' ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-700'}`}>{students.length}</span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${activeTab === 'students' ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-700'}`}>{students.length}</span>
             </button>
             <button onClick={() => { setActiveTab('chat_history'); setIsSidebarOpen(false); }} className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'chat_history' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}`}>
               <div className="flex items-center gap-3"><MessageSquare size={16} /> <span>AI Chat History</span></div>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${activeTab === 'chat_history' ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-700'}`}>{chatLogs.length}</span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${activeTab === 'chat_history' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}`}>{chatLogs.length}</span>
             </button>
             <button onClick={() => { setActiveTab('messages'); setIsSidebarOpen(false); }} className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'messages' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}`}>
               <div className="flex items-center gap-3"><Mail size={16} /> <span>Contact Messages</span></div>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${activeTab === 'messages' ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-700'}`}>{contactMessages.length}</span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${activeTab === 'messages' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}`}>{contactMessages.length}</span>
             </button>
           </nav>
         </div>
 
-        {/* Bottom Pinned Actions */}
         <div className="space-y-1.5 pt-3 border-t border-slate-200 shrink-0">
           <button 
             type="button"
@@ -575,7 +637,7 @@ export function AdminDashboard({ onNavigate, onSignOut }: AdminDashboardProps) {
         </div>
       </aside>
 
-      {/* 🌟 Main Content Area - Full Visibility on Mobile 🌟 */}
+      {/* Main Content Area */}
       <main className="flex-1 w-full min-w-0 p-3.5 md:p-8 space-y-5">
         
         {/* Top Banner */}
@@ -605,7 +667,7 @@ export function AdminDashboard({ onNavigate, onSignOut }: AdminDashboardProps) {
             </button>
             <div className="bg-white/15 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 text-xs font-semibold flex items-center gap-1.5">
               <ShieldCheck size={14} className="text-amber-300 shrink-0" />
-              <span className="font-mono text-white text-[11px] truncate">admin@college.edu</span>
+              <span className="font-mono text-white text-[11px] truncate">ucscollege2026@gmail.com</span>
             </div>
           </div>
         </div>
@@ -647,7 +709,6 @@ export function AdminDashboard({ onNavigate, onSignOut }: AdminDashboardProps) {
               </div>
             </div>
 
-            {/* Recent AI Conversations Section */}
             <div className="bg-white rounded-2xl border border-slate-200 p-4 md:p-6 shadow-sm space-y-4">
               <div className="flex items-center justify-between border-b pb-3">
                 <h3 className="text-sm md:text-base font-extrabold text-slate-800 flex items-center gap-2">
@@ -678,7 +739,7 @@ export function AdminDashboard({ onNavigate, onSignOut }: AdminDashboardProps) {
           </div>
         )}
 
-        {/* 🌟 2. AI KNOWLEDGE BASE TAB 🌟 */}
+        {/* 🌟 2. AI KNOWLEDGE BASE TAB (With Rich Formatting Buttons) 🌟 */}
         {activeTab === 'knowledge' && (
           <div className="space-y-5">
             <div className="bg-white rounded-2xl border border-slate-200 p-4 md:p-6 shadow-sm space-y-4">
@@ -688,13 +749,13 @@ export function AdminDashboard({ onNavigate, onSignOut }: AdminDashboardProps) {
                   <span>{editingKnId ? 'Modify AI Knowledge Topic' : 'Add AI Knowledge Data (Train Chatbot)'}</span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-1">
-                  Add keywords and answers (e.g. NCC, Sports, BCA Fees, Hostel, Library). The AI Assistant will instantly answer students based on this data.
+                  Add keywords and structured answers. Use the toolbar buttons below for <strong>Bold</strong>, <em>Italic</em>, and • Bullets.
                 </p>
               </div>
 
               <form onSubmit={handleSaveKnowledge} className="space-y-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Topic / Keyword (e.g. NCC, Sports, Timing)</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Topic / Keyword (e.g. NCC, Sports, Timing, BCA Fees)</label>
                   <input
                     type="text"
                     required
@@ -706,16 +767,93 @@ export function AdminDashboard({ onNavigate, onSignOut }: AdminDashboardProps) {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">AI Answer / Full Information</label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold text-slate-700">AI Answer / Full Information</label>
+                    
+                    {/* 🌟 Live Preview Toggle 🌟 */}
+                    <button
+                      type="button"
+                      onClick={() => setShowPreview(!showPreview)}
+                      className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg border transition-colors cursor-pointer ${showPreview ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}
+                    >
+                      <Eye size={13} />
+                      <span>{showPreview ? 'Hide Preview' : 'Show Live Preview'}</span>
+                    </button>
+                  </div>
+
+                  {/* 🌟 Rich Formatting Toolbar 🌟 */}
+                  <div className="flex flex-wrap items-center gap-1.5 p-2 bg-slate-100/90 border border-slate-200 rounded-t-xl">
+                    <button
+                      type="button"
+                      onClick={() => applyFormatting('**', '**')}
+                      className="p-1.5 bg-white hover:bg-blue-50 hover:text-blue-600 text-slate-700 rounded-lg border border-slate-200 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                      title="Bold (**text**)"
+                    >
+                      <Bold size={14} />
+                      <span>Bold</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => applyFormatting('*', '*')}
+                      className="p-1.5 bg-white hover:bg-blue-50 hover:text-blue-600 text-slate-700 rounded-lg border border-slate-200 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                      title="Italic (*text*)"
+                    >
+                      <Italic size={14} />
+                      <span>Italic</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => insertList('bullet')}
+                      className="p-1.5 bg-white hover:bg-blue-50 hover:text-blue-600 text-slate-700 rounded-lg border border-slate-200 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                      title="Bullet List"
+                    >
+                      <List size={14} />
+                      <span>• Bullet</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => insertList('number')}
+                      className="p-1.5 bg-white hover:bg-blue-50 hover:text-blue-600 text-slate-700 rounded-lg border border-slate-200 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                      title="Numbered List"
+                    >
+                      <ListOrdered size={14} />
+                      <span>1. List</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setKnContent('')}
+                      className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg border border-rose-200 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors ml-auto"
+                      title="Clear Content"
+                    >
+                      <Eraser size={14} />
+                      <span>Clear</span>
+                    </button>
+                  </div>
+
                   <textarea
-                    rows={4}
+                    ref={textareaRef}
+                    rows={5}
                     required
                     value={knContent}
                     onChange={(e) => setKnContent(e.target.value)}
-                    placeholder="Write detailed answer the chatbot should give for this topic..."
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border rounded-xl text-xs outline-none focus:border-blue-600 leading-relaxed text-slate-700"
+                    placeholder="Type details... Highlight words and click 'Bold' or 'Bullet' to format!"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-t-0 rounded-b-xl text-xs outline-none focus:border-blue-600 leading-relaxed text-slate-800 font-mono"
                   />
                 </div>
+
+                {/* 🌟 Live Preview Box 🌟 */}
+                {showPreview && knContent.trim() && (
+                  <div className="p-3.5 bg-blue-50/50 border border-blue-200 rounded-xl space-y-1">
+                    <span className="text-[11px] font-extrabold uppercase text-blue-700 tracking-wider">Chatbot Visual Preview:</span>
+                    <div className="bg-white p-3 rounded-lg border border-blue-100 text-xs shadow-2xs">
+                      <FormattedText text={knContent} />
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex gap-2 pt-1">
                   <button type="submit" className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md">
@@ -731,6 +869,7 @@ export function AdminDashboard({ onNavigate, onSignOut }: AdminDashboardProps) {
               </form>
             </div>
 
+            {/* List of Knowledge Topics */}
             <div className="bg-white rounded-2xl border border-slate-200 p-4 md:p-6 shadow-sm space-y-4">
               <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
                 Trained AI Knowledge Base ({knowledgeList.length})
@@ -765,7 +904,9 @@ export function AdminDashboard({ onNavigate, onSignOut }: AdminDashboardProps) {
                         </button>
                       </div>
                     </div>
-                    <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">{k.content}</p>
+                    <div className="text-xs text-slate-700 leading-relaxed bg-white p-3 rounded-xl border border-slate-200/80 shadow-2xs">
+                      <FormattedText text={k.content} />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -993,7 +1134,9 @@ export function AdminDashboard({ onNavigate, onSignOut }: AdminDashboardProps) {
                       </div>
                     </div>
                     <p className="text-xs font-bold text-blue-700">Subject: {msg.subject || 'General Inquiry'}</p>
-                    <p className="text-xs text-slate-600 bg-white p-3 rounded-xl border border-slate-200 leading-relaxed">{msg.message}</p>
+                    <div className="text-xs text-slate-600 bg-white p-3 rounded-xl border border-slate-200 leading-relaxed">
+                      <FormattedText text={msg.message} />
+                    </div>
                   </div>
                 ))
               )}
