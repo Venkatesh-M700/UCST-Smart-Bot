@@ -14,13 +14,11 @@ import {
   Trash2,
   X,
   ShieldCheck,
-  ExternalLink,
   MessageSquareQuote
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useCollegeSettings, useCourses } from '@/hooks/useCollegeData';
-import { PageContainer, PageHeader } from '@/components/ui';
 import type { Route } from '@/types/route';
 
 interface Message {
@@ -61,7 +59,7 @@ const KNOWLEDGE_KEY = 'ucs_admin_knowledge';
 // 🌟 Ultra-Clean Robust Parser for Bold, Italic & Clickable Hyperlinks 🌟
 function FormattedText({ text }: { text: string }) {
   const parseContent = (input: string) => {
-    // 1. Convert Clickable URL Links first
+    // 1. Convert Clickable URL Links
     let parsed = input.replace(
       /(https?:\/\/[^\s]+)/g,
       '<a href="$1" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-bold underline bg-blue-50 px-2 py-0.5 rounded-md hover:bg-blue-100 transition-colors break-all">$1 ↗</a>'
@@ -78,7 +76,7 @@ function FormattedText({ text }: { text: string }) {
   };
 
   return (
-    <div className="space-y-1.5 text-slate-800 leading-relaxed text-sm md:text-[15px]">
+    <div className="space-y-1.5 text-slate-800 leading-relaxed text-sm md:text-base">
       {text.split('\n').map((line, idx) => (
         <p
           key={idx}
@@ -396,14 +394,8 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
   };
 
   return (
-    <PageContainer>
-      {/* 🌟 Header Styled like About.tsx 🌟 */}
-      <PageHeader 
-        icon={MessageSquareQuote} 
-        title="AI Campus & Enquiry Assistant" 
-        subtitle="Instant answers for courses, eligibility, fees, hostels, and college facilities" 
-      />
-
+    <div className="w-full max-w-6xl mx-auto px-2 sm:px-4 md:px-6 py-4 space-y-4">
+      
       {isPromptModalOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200">
@@ -432,10 +424,10 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
         </div>
       )}
 
-      {/* Main Chatbot Window matching About.tsx card layout */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col overflow-hidden h-[75vh] md:h-[78vh]">
+      {/* 🌟 Full Width Responsive Chat Box 🌟 */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col overflow-hidden h-[82vh] md:h-[84vh] w-full">
         
-        {/* Top Chat Bar */}
+        {/* Top Header Bar */}
         <div className="bg-gray-50/90 px-4 md:px-6 py-3.5 border-b border-gray-200/80 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-2xl bg-primary-600 text-white flex items-center justify-center shadow-md">
@@ -474,17 +466,17 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
           </div>
         </div>
 
-        {/* Chat Messages Section */}
+        {/* Chat Transcript Stream */}
         <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-4 bg-white">
           {messages.map((msg) => (
-            <div key={msg.id} className={`flex gap-3 max-w-[92%] md:max-w-[80%] ${msg.sender === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}>
+            <div key={msg.id} className={`flex gap-3 max-w-[95%] md:max-w-[85%] ${msg.sender === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}>
               <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs ${msg.sender === 'user' ? 'bg-primary-600 text-white' : 'bg-teal-600 text-white'}`}>
                 {msg.sender === 'user' ? <User size={18} /> : <Bot size={18} />}
               </div>
               <div className="space-y-1">
                 <div className={`p-4 rounded-2xl shadow-xs ${msg.sender === 'user' ? 'bg-primary-600 text-white rounded-tr-none font-medium' : 'bg-gray-50/90 text-slate-800 border border-gray-200/80 rounded-tl-none'}`}>
                   {msg.sender === 'user' ? (
-                    <p className="leading-relaxed text-sm md:text-[15px]">{msg.text}</p>
+                    <p className="leading-relaxed text-sm md:text-base">{msg.text}</p>
                   ) : (
                     <FormattedText text={msg.text} />
                   )}
@@ -519,7 +511,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
               <button 
                 type="button" 
                 onClick={() => handleSend(undefined, p.prompt)} 
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-primary-50 hover:text-primary-700 text-slate-700 border border-gray-200 rounded-xl text-xs font-bold cursor-pointer transition-colors shadow-2xs"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-primary-50 hover:text-primary-700 text-slate-700 border border-gray-200 rounded-xl text-xs md:text-sm font-bold cursor-pointer transition-colors shadow-2xs"
               >
                 {getPromptIcon(idx)}
                 <span>{p.label}</span>
@@ -535,7 +527,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
           ))}
 
           {isAdminState && (
-            <button type="button" onClick={handleOpenAddModal} className="px-2.5 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold shrink-0 cursor-pointer shadow-xs">
+            <button type="button" onClick={handleOpenAddModal} className="px-2.5 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold shrink-0 cursor-pointer shadow-xs">
               <Plus size={14} />
             </button>
           )}
@@ -554,7 +546,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
             <button 
               type="submit" 
               disabled={!input.trim()} 
-              className="h-11 w-11 rounded-xl bg-primary-600 hover:bg-primary-700 text-white flex items-center justify-center shadow-md disabled:opacity-50 cursor-pointer shrink-0 transition-all"
+              className="h-11 w-11 md:h-12 md:w-12 rounded-xl bg-primary-600 hover:bg-primary-700 text-white flex items-center justify-center shadow-md disabled:opacity-50 cursor-pointer shrink-0 transition-all"
             >
               <Send size={18} />
             </button>
@@ -562,7 +554,7 @@ export function Chatbot({ onNavigate }: ChatbotProps) {
         </div>
 
       </div>
-    </PageContainer>
+    </div>
   );
 }
 
